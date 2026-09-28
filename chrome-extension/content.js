@@ -59,6 +59,29 @@
         (element.getAttribute('aria-label') || element.innerText || element.value || '').trim(),
       ));
   }
+  function campusLabel(element) {
+    return (element.innerText || element.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
+  }
+  function campusLink() {
+    const matches = element => visible(element) && campusLabel(element) === campusChoice.toLowerCase();
+    const link = Array.from(document.querySelectorAll('button, a, [role="button"]')).find(matches);
+    if (link) return link;
+    for (const block of document.querySelectorAll('d2l-html-block[html]')) {
+      const rendered = Array.from(block.shadowRoot?.querySelectorAll('a') || []).find(matches);
+      if (rendered) return rendered;
+      // Brightspace also stores the links as HTML on the component. This works
+      // when its rendered links are inside a closed shadow root.
+      const template = document.createElement('template');
+      template.innerHTML = block.getAttribute('html') || '';
+      const stored = Array.from(template.content.querySelectorAll('a'))
+        .find(element => campusLabel(element) === campusChoice.toLowerCase());
+      if (stored) {
+        const url = new URL(stored.getAttribute('href'), location.href);
+        if (url.protocol === 'https:') return { click: () => location.assign(url.href) };
+      }
+    }
+    return null;
+  }
   function fill(element, value) {
     if (!element || (element.value && element.value !== value)) return false;
     const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
@@ -185,10 +208,7 @@
       const text = document.body?.innerText || '';
       if (brightspace) {
         if (location.pathname.toLowerCase() !== '/d2l/login') return;
-        const campus = Array.from(document.querySelectorAll('button, a, [role="button"]'))
-          .find(element => visible(element) && (element.innerText || element.textContent || '')
-            .replace(/\s+/g, ' ').trim().toLowerCase() === campusChoice.toLowerCase());
-        click('campus', campus);
+        click('campus', campusLink());
         return;
       }
       if (purdueAccountPicker(text)) {

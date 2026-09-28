@@ -13,14 +13,16 @@ function element(text, onClick = () => {}) {
   };
 }
 
-async function contentPage({ hostname, pathname, body, campus, enabled = true, manualPause = 0, rows = [], controls = [], brand = false }) {
+async function contentPage({ hostname, pathname, body, campus, enabled = true, manualPause = 0,
+  rows = [], controls = [], blocks = [], storedLinks = [], navigation = [], brand = false }) {
   const changes = [];
   const messages = [];
   const session = new Map();
   const page = vm.createContext({
     URL, console, Date, setTimeout(callback) { callback(); return 1; }, clearTimeout() {},
     setInterval: () => 1, clearInterval() {},
-    location: { protocol: 'https:', hostname, pathname, reload() {} },
+    location: { protocol: 'https:', hostname, pathname, href: `https://${hostname}${pathname}`,
+      assign(url) { navigation.push(url); }, reload() {} },
     sessionStorage: {
       getItem: key => session.get(key), setItem: (key, value) => session.set(key, value),
     },
@@ -28,7 +30,9 @@ async function contentPage({ hostname, pathname, body, campus, enabled = true, m
     document: {
       body: { innerText: body },
       querySelector: () => brand ? element('Purdue University') : null,
+      createElement: () => ({ content: { querySelectorAll: () => storedLinks }, set innerHTML(_value) {} }),
       querySelectorAll(selector) {
+        if (selector === 'd2l-html-block[html]') return blocks;
         if (selector === 'button, a, [role="button"]'
           || selector === 'button, a, input[type="submit"], [role="button"]') return controls;
         if (selector === 'button, a, [role="button"], [data-test-id], .table') return rows;
@@ -46,6 +50,28 @@ async function contentPage({ hostname, pathname, body, campus, enabled = true, m
   });
   await vm.runInContext(content, page);
   return { changes, messages };
+}
+
+{
+  const clicked = [];
+  const link = element(' Purdue West Lafayette / Indianapolis', () => clicked.push('west'));
+  const block = { shadowRoot: { querySelectorAll: () => [link] }, getAttribute: () => '' };
+  await contentPage({ hostname: 'purdue.brightspace.com', pathname: '/d2l/login',
+    body: 'Please choose your campus', campus: 'Purdue West Lafayette / Indianapolis', blocks: [block] });
+  assert.deepEqual(clicked, ['west'], 'Find Brightspace campus links inside a component shadow root');
+}
+
+{
+  const navigation = [];
+  const link = element(' Purdue West Lafayette / Indianapolis');
+  link.getAttribute = () => '/d2l/lp/auth/saml/initiate-login?entityId=https://idp.purdue.edu/idp/shibboleth';
+  const block = { shadowRoot: null, getAttribute: () => '<a>campus</a>' };
+  await contentPage({ hostname: 'purdue.brightspace.com', pathname: '/d2l/login',
+    body: 'Please choose your campus', campus: 'Purdue West Lafayette / Indianapolis',
+    blocks: [block], storedLinks: [link], navigation });
+  assert.deepEqual(navigation, [
+    'https://purdue.brightspace.com/d2l/lp/auth/saml/initiate-login?entityId=https://idp.purdue.edu/idp/shibboleth',
+  ], 'Use the campus URL stored on the component when its shadow root is closed');
 }
 
 {
