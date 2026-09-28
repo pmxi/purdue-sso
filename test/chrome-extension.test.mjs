@@ -13,8 +13,8 @@ const optionsSource = await readFile(new URL('chrome-extension/options.js', root
 assert.equal(manifest.manifest_version, 3);
 assert.equal(manifest.version, packageJson.version, 'Keep extension and package versions aligned');
 assert.deepEqual(manifest.permissions, ['storage', 'activeTab']);
-assert.deepEqual(manifest.host_permissions, ['https://purdue.brightspace.com/*']);
-assert.equal(manifest.background.service_worker, 'background.js');
+assert.equal(manifest.host_permissions, undefined);
+assert.equal(manifest.background, undefined, 'Automatic sign-in needs no background worker');
 assert.deepEqual(manifest.content_scripts[0].matches, [
   'https://sso.purdue.edu/*',
   'https://idp.purdue.edu/*',

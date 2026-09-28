@@ -13,9 +13,9 @@ The unpacked extension stays installed while the folder remains in place. When u
 
 To get a new setup key for a Purdue account that already has MFA, sign in at [Microsoft Security info](https://mysignins.microsoft.com/security-info) using your existing method. Choose **+ Add sign-in method → Microsoft Authenticator → Set up a different authenticator app → Can’t scan QR Code?** Copy the secret key into the extension options and save. Use the displayed current code to verify the new method in Microsoft Security info. Keep your existing method until the new method works. Purdue documents this flow in its [authentication code setup guide](https://service.purdue.edu/TDClient/32/Purdue/KB/Article/2219/How-To-Set-Up-Authentication-Codes-with-Yubikeys-for-Microsoft-MFA). Never put the key in an issue, PR, or chat.
 
-The popup has three choices. **Regular automatic sign-in** uses the saved account. **Switch accounts** signs out of Brightspace and the saved Microsoft account, reloads the page, selects the configured campus, and waits at the account picker. Choosing the saved account resumes automatic sign-in; another account stays manual for that login. **Complete manual** stops automation for 15 minutes, 30 minutes, 1 hour, or until you choose automatic again. It asks whether to sign out now, so you can stay signed in if you only want automation paused. A separate **Sign out** button is always available; it signs out and holds automatic sign-in until you select it again.
+The popup pauses automatic sign-in for 15 minutes, 30 minutes, 1 hour, or until you resume it. While paused, use the website's own controls to choose another account. The popup also offers **Retry on this tab** if a sign-in page was interrupted.
 
-Brightspace does not provide SAML single logout, so Purdue SSO may retain a session after the normal Brightspace and Microsoft steps. If a live switch still skips the account picker or MFA, narrowly scoped site-data removal for Purdue and Microsoft sign-in origins is the fallback to investigate. This extension does not remove cookies.
+The extension does not sign out, clear cookies, or change browser site data. Brightspace's Log Out control may leave a Purdue SSO session active; use Chrome's site-data controls for the affected Purdue, Brightspace, and Microsoft sites if a stale session prevents sign-in.
 
 ## Violentmonkey userscript
 
@@ -41,7 +41,7 @@ For Firefox private windows, allow Violentmonkey under **Extensions and Themes �
 
 ## Behavior
 
-- Runs on `sso.purdue.edu`, `idp.purdue.edu`, `login.microsoftonline.com`, and `purdue.brightspace.com`, over HTTPS and in the top-level page only. On Brightspace, it selects the campus on the `/d2l/login` page. When you request sign-out from the Chrome popup, it invokes Brightspace's own logout action directly, even while the account menu is closed.
+- Runs on `sso.purdue.edu`, `idp.purdue.edu`, `login.microsoftonline.com`, and `purdue.brightspace.com`, over HTTPS and in the top-level page only. On Brightspace, it selects the campus on the `/d2l/login` page.
 - On Microsoft, requires Purdue's tenant, the configured account, or a recent continuation of that login. A different detected account prevents automation.
 - Fills username/password, chooses “Use a verification code” instead of app approval, and generates a TOTP locally with Web Crypto.
 - Checks “Don't show this again” and chooses **Yes** on “Stay signed in?”.

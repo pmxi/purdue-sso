@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name Purdue automatic sign-in
 // @namespace https://github.com/pmxi/purdue-sso
-// @version 1.0.10
+// @version 1.0.11
 // @description Sign in to Purdue with your saved password and authenticator code.
 // @match https://sso.purdue.edu/*
 // @match https://idp.purdue.edu/*
@@ -49,9 +49,6 @@
   let started = Date.now();
   let timer;
   let resumeTimer;
-  let authFlow = null;
-  async function setAuthFlow() {}
-  async function flowStep() { return false; }
   GM_registerMenuCommand('Purdue: ' + (enabled ? 'pause' : 'enable') + ' automatic sign-in', () => {
     GM_setValue('enabled', !enabled);
     location.reload();
@@ -130,31 +127,6 @@
   }
   function manualPaused(now = Date.now()) {
     return pausedUntil === -1 || pausedUntil > now;
-  }
-  async function signOutBrightspace() {
-    if (!brightspace || location.pathname.toLowerCase() === '/d2l/login') return false;
-    // Brightspace renders its real logout action even while the menu is closed.
-    // Invoke that action directly, without depending on the avatar dropdown.
-    let signOut = Array.from(document.querySelectorAll('a[onclick]')).find(element =>
-      /^log out$/i.test((element.textContent || '').trim())
-      && /^D2L\.O\(/.test(element.getAttribute('onclick') || ''));
-    if (signOut) {
-      setTimeout(() => signOut.click(), 0);
-      return true;
-    }
-    signOut = control(/^log out$/i);
-    if (!signOut) {
-      const avatar = document.querySelector('d2l-labs-navigation-dropdown-button-custom[opener-label*="avatar" i]')
-        ?.shadowRoot?.querySelector('button')
-        || Array.from(document.querySelectorAll('[aria-label*="avatar" i]')).find(visible);
-      if (!avatar) return false;
-      avatar.click();
-      await new Promise(resolve => setTimeout(resolve, 150));
-      signOut = control(/^log out$/i);
-    }
-    if (!signOut) return false;
-    setTimeout(() => signOut.click(), 0);
-    return true;
   }
   function identity() {
     const candidates = Array.from(document.querySelectorAll(
@@ -237,12 +209,11 @@
 
   async function tick() {
     const now = Date.now();
-    if (busy || (stopped && !authFlow) || (manualPaused(now) && !authFlow)) return;
-    if (!authFlow && now - started > 180_000) return;
+    if (busy || stopped || manualPaused(now)) return;
+    if (now - started > 180_000) return;
     busy = true;
     try {
       const text = document.body?.innerText || '';
-      if (await flowStep(text)) return;
       if (brightspace) {
         if (location.pathname.toLowerCase() !== '/d2l/login') return;
         click('campus', campusLink());
@@ -320,8 +291,8 @@
   function scheduleTicks() {
     clearInterval(timer);
     clearTimeout(resumeTimer);
-    if ((stopped || pausedUntil === -1) && !authFlow) return;
-    if (pausedUntil > Date.now() && !authFlow) {
+    if (stopped || pausedUntil === -1) return;
+    if (pausedUntil > Date.now()) {
       resumeTimer = setTimeout(() => { pausedUntil = 0; scheduleTicks(); }, pausedUntil - Date.now());
       return;
     }
@@ -329,7 +300,7 @@
     started = Date.now();
     void tick();
     timer = setInterval(() => {
-      if ((stopped || Date.now() - started > 180_000) && !authFlow) clearInterval(timer);
+      if (stopped || Date.now() - started > 180_000) clearInterval(timer);
       else void tick();
     }, 600);
   }
