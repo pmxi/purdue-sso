@@ -6,6 +6,7 @@ import vm from 'node:vm';
 const root = new URL('../', import.meta.url);
 const manifest = JSON.parse(await readFile(new URL('chrome-extension/manifest.json', root), 'utf8'));
 const content = await readFile(new URL('chrome-extension/content.js', root), 'utf8');
+const optionsSource = await readFile(new URL('chrome-extension/options.js', root), 'utf8');
 
 assert.equal(manifest.manifest_version, 3);
 assert.deepEqual(manifest.permissions, ['storage', 'activeTab']);
@@ -59,3 +60,40 @@ async function runContent(enabled) {
 assert.deepEqual(await runContent(false), { submits: 0, storageReads: 1, username: '' });
 assert.deepEqual(await runContent(true), { submits: 1, storageReads: 1, username: 'test@purdue.edu' });
 console.log('Passed: Chrome startup stays off until enabled and submits the configured Purdue account.');
+
+const listeners = {};
+const inputs = Object.fromEntries(['username', 'password', 'totp_uri', 'enabled', 'status']
+  .map(key => [key, { value: '', checked: false, textContent: '' }]));
+let savedSettings;
+let removedSettings;
+const form = { addEventListener: (name, handler) => { listeners[name] = handler; }, reset() {} };
+const clearButton = { addEventListener: (name, handler) => { listeners.clear = handler; } };
+const optionsContext = vm.createContext({
+  URL,
+  document: { querySelector(selector) {
+    if (selector === '#settings') return form;
+    if (selector === '#clear') return clearButton;
+    return inputs[selector.slice(1)];
+  } },
+  chrome: { storage: { local: {
+    async get() { return {}; },
+    async set(value) { savedSettings = value; },
+    async remove(value) { removedSettings = value; },
+  } } },
+});
+await vm.runInContext(`(async () => { ${optionsSource} })()`, optionsContext);
+inputs.username.value = 'test@purdue.edu';
+inputs.password.value = ' keep spaces ';
+inputs.totp_uri.value = '123456';
+inputs.enabled.checked = true;
+await listeners.submit({ preventDefault() {} });
+assert.equal(savedSettings, undefined, 'A six-digit code is not an enrollment URI');
+inputs.totp_uri.value = 'otpauth://totp/Test?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ';
+await listeners.submit({ preventDefault() {} });
+assert.equal(savedSettings.username, 'test');
+assert.equal(savedSettings.password, ' keep spaces ', 'Do not alter the password');
+assert.equal(savedSettings.enabled, true);
+assert.equal(savedSettings.totp_uri, inputs.totp_uri.value);
+await listeners.clear();
+assert.equal(removedSettings.join(','), 'username,password,totp_uri,enabled');
+console.log('Passed: Chrome options reject a one-time code, preserve credentials, and clear settings.');
