@@ -219,6 +219,8 @@ async function contentPage({ hostname, pathname, body, campus, enabled = true, m
   const store = { manual_pause_until: 0, enabled: true, username: 'test', password: 'dummy', totp_uri: uri };
   const requests = [];
   let queryGate;
+  let configGate;
+  let reloads = 0;
   const nodes = Object.fromEntries(['automatic', 'switch', 'manual', 'manual-length',
     'manual-question', 'manual-signout', 'manual-stay', 'signout', 'settings', 'retry', 'mode-state', 'status']
     .map(id => [id, { hidden: id === 'manual-question', textContent: '', value: '15',
@@ -229,7 +231,10 @@ async function contentPage({ hostname, pathname, body, campus, enabled = true, m
     chrome: {
       storage: {
         local: {
-          async get() { return { ...store }; },
+          async get(keys) {
+            if (configGate && Array.isArray(keys) && keys.includes('enabled')) await configGate;
+            return { ...store };
+          },
           async set(value) { Object.assign(store, value); },
           async remove(keys) { for (const key of Array.isArray(keys) ? keys : [keys]) delete store[key]; },
         },
@@ -242,7 +247,7 @@ async function contentPage({ hostname, pathname, body, campus, enabled = true, m
           return [{ id: 7, url: 'https://purdue.brightspace.com/d2l/home/6824' }];
         },
         async sendMessage() { return true; },
-        async reload() {},
+        async reload() { reloads++; },
       },
     },
   });
@@ -277,6 +282,17 @@ async function contentPage({ hostname, pathname, body, campus, enabled = true, m
   releaseQuery();
   await Promise.all([firstSignout, secondSignout]);
   assert.equal(requests.length, 4, 'Rapid repeated clicks start only one sign-out');
+  let releaseConfig;
+  configGate = new Promise(resolve => { releaseConfig = resolve; });
+  const firstSwitch = listeners.switch();
+  const secondSwitch = listeners.switch();
+  const automaticDuringSwitch = listeners.automatic();
+  assert.equal(nodes.switch.disabled, true, 'Switch locks mode choices before reading settings');
+  releaseConfig();
+  await Promise.all([firstSwitch, secondSwitch, automaticDuringSwitch]);
+  assert.equal(requests.length, 5, 'Switch preflight starts one flow');
+  assert.equal(requests[4].kind, 'switch');
+  assert.equal(reloads, 1, 'Automatic did not reload while switch was starting');
 }
 
 console.log('Passed: campus, account picker, sign-out controls, switch flow, and manual confirmation.');

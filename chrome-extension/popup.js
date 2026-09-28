@@ -1,7 +1,7 @@
 const status = document.querySelector('#status');
 const state = document.querySelector('#mode-state');
 const question = document.querySelector('#manual-question');
-const modeButtons = ['#automatic', '#switch', '#manual', '#signout']
+const modeButtons = ['#automatic', '#switch', '#manual', '#manual-signout', '#signout']
   .map(selector => document.querySelector(selector));
 let starting = false;
 
@@ -27,26 +27,32 @@ async function showMode() {
     ? 'Regular automatic sign-in is on.' : 'Finish setup in Settings to use automatic sign-in.';
 }
 
-async function startFlow(kind) {
+async function runAction(action) {
   if (starting) return;
   starting = true;
   setBusy(true);
   try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (!tab?.id) { status.textContent = 'Open a browser tab and try again.'; return; }
-    status.textContent = 'Signing out…';
-    const result = await chrome.runtime.sendMessage({ type: 'start-flow', kind,
-      source: { id: tab.id, url: tab.url || '' } });
-    status.textContent = result?.ok ? 'Sign-out started.' : result?.error || 'Sign-out could not start.';
+    await action();
   } catch {
-    status.textContent = 'Sign-out could not start. Reload the extension and try again.';
+    status.textContent = 'The action could not finish. Reload the extension and try again.';
   } finally {
     starting = false;
     await showMode();
   }
 }
 
-document.querySelector('#automatic').addEventListener('click', async () => {
+async function performFlow(kind) {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab?.id) { status.textContent = 'Open a browser tab and try again.'; return; }
+  status.textContent = 'Signing out…';
+  const result = await chrome.runtime.sendMessage({ type: 'start-flow', kind,
+    source: { id: tab.id, url: tab.url || '' } });
+  status.textContent = result?.ok ? 'Sign-out started.' : result?.error || 'Sign-out could not start.';
+}
+
+const startFlow = kind => runAction(() => performFlow(kind));
+
+document.querySelector('#automatic').addEventListener('click', () => runAction(async () => {
   const config = await chrome.storage.local.get(['username', 'password', 'totp_uri']);
   if (!config.username || !config.password || !config.totp_uri) {
     status.textContent = 'Finish setup in Settings first.';
@@ -60,10 +66,9 @@ document.querySelector('#automatic').addEventListener('click', async () => {
   if (tab?.id && /^https:\/\/(?:sso|idp)\.purdue\.edu\/|^https:\/\/login\.microsoftonline\.com\/|^https:\/\/purdue\.brightspace\.com\//.test(tab.url || '')) {
     await chrome.tabs.reload(tab.id);
   }
-  await showMode();
-});
+}));
 
-document.querySelector('#switch').addEventListener('click', async () => {
+document.querySelector('#switch').addEventListener('click', () => runAction(async () => {
   const config = await chrome.storage.local.get(['enabled', 'username', 'password', 'totp_uri']);
   if (!config.enabled || !config.username || !config.password || !config.totp_uri) {
     status.textContent = 'Finish setup in Settings before switching accounts.';
@@ -71,20 +76,20 @@ document.querySelector('#switch').addEventListener('click', async () => {
   }
   await chrome.storage.local.remove('manual_pause_until');
   question.hidden = true;
-  await startFlow('switch');
-});
+  await performFlow('switch');
+}));
 
-document.querySelector('#manual').addEventListener('click', async () => {
+document.querySelector('#manual').addEventListener('click', () => runAction(async () => {
   const choice = document.querySelector('#manual-length').value;
   const until = choice === 'until-resumed' ? -1 : Date.now() + Number(choice) * 60_000;
   await chrome.storage.local.set({ manual_pause_until: until });
   await chrome.storage.local.remove('auth_flow');
   question.hidden = false;
   status.textContent = '';
-  await showMode();
-});
+}));
 
 document.querySelector('#manual-signout').addEventListener('click', async () => {
+  if (starting) return;
   question.hidden = true;
   await startFlow('manual');
 });
