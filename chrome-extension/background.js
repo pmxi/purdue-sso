@@ -2,6 +2,11 @@ const MICROSOFT_LOGOUT = 'https://login.microsoftonline.com/4130bd39-7c53-419c-b
 const BRIGHTSPACE_LOGIN = 'https://purdue.brightspace.com/d2l/login';
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+async function flowIsCurrent(id) {
+  const { auth_flow: flow } = await chrome.storage.local.get('auth_flow');
+  return flow?.id === id;
+}
+
 function brightspace(url) {
   try { return new URL(url).origin === 'https://purdue.brightspace.com'; }
   catch { return false; }
@@ -49,20 +54,28 @@ async function startFlow(kind, source) {
   await chrome.storage.local.set({ auth_flow: flow });
   try {
     flow.brightspaceTabId = await signOutBrightspace(source);
+    if (!await flowIsCurrent(flow.id)) return { ok: false, error: 'Sign-out was canceled.' };
     flow.phase = 'microsoft';
     await chrome.storage.local.set({ auth_flow: flow });
     const logoutTab = await chrome.tabs.create({ url: 'about:blank', active: true });
     flow.logoutTabId = logoutTab.id;
+    if (!await flowIsCurrent(flow.id)) {
+      await chrome.tabs.remove(logoutTab.id);
+      return { ok: false, error: 'Sign-out was canceled.' };
+    }
     await chrome.storage.local.set({ auth_flow: flow });
     await chrome.tabs.update(logoutTab.id, { url: MICROSOFT_LOGOUT });
     return { ok: true };
   } catch (error) {
-    await chrome.storage.local.set({ auth_flow: { ...flow, phase: 'error', error: error.message } });
+    if (await flowIsCurrent(flow.id)) {
+      await chrome.storage.local.set({ auth_flow: { ...flow, phase: 'error', error: error.message } });
+    }
     return { ok: false, error: error.message };
   }
 }
 
 async function finishFlow(flow, logoutTabId) {
+  if (!await flowIsCurrent(flow.id)) return;
   if (flow.kind === 'switch') {
     await chrome.storage.local.set({ auth_flow: { ...flow, phase: 'choosing' } });
   } else if (flow.kind === 'manual') {
@@ -90,7 +103,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         || sender.tab?.id !== flow.logoutTabId) return;
       try { await finishFlow(flow, sender.tab.id); }
       catch (error) {
-        await chrome.storage.local.set({ auth_flow: { ...flow, phase: 'error', error: error.message } });
+        if (await flowIsCurrent(flow.id)) {
+          await chrome.storage.local.set({ auth_flow: { ...flow, phase: 'error', error: error.message } });
+        }
       }
     });
   }

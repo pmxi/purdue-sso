@@ -1,12 +1,19 @@
 const status = document.querySelector('#status');
 const state = document.querySelector('#mode-state');
 const question = document.querySelector('#manual-question');
+const modeButtons = ['#automatic', '#switch', '#manual', '#signout']
+  .map(selector => document.querySelector(selector));
+
+function setBusy(busy) {
+  for (const button of modeButtons) button.disabled = busy;
+}
 
 async function showMode() {
   const { manual_pause_until: until = 0, auth_flow: flow, enabled,
     username, password, totp_uri: secret } = await chrome.storage.local.get([
     'manual_pause_until', 'auth_flow', 'enabled', 'username', 'password', 'totp_uri',
   ]);
+  setBusy(flow?.phase === 'logging-out' || flow?.phase === 'microsoft');
   if (flow?.phase === 'error') state.textContent = `Sign-out stopped: ${flow.error}`;
   else if (flow?.phase === 'signed-out') state.textContent = 'Signed out. Choose regular automatic sign-in when ready.';
   else if (flow?.kind === 'switch') state.textContent = flow.phase === 'choosing'
@@ -23,6 +30,7 @@ async function startFlow(kind) {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab?.id) { status.textContent = 'Open a browser tab and try again.'; return; }
   status.textContent = 'Signing out…';
+  setBusy(true);
   try {
     const result = await chrome.runtime.sendMessage({ type: 'start-flow', kind,
       source: { id: tab.id, url: tab.url || '' } });

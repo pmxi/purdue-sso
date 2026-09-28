@@ -4,7 +4,7 @@ import vm from 'node:vm';
 
 const source = await readFile(new URL('../chrome-extension/background.js', import.meta.url), 'utf8');
 
-async function run(kind) {
+async function run(kind, cancelAt = '') {
   const startUrl = 'https://purdue.brightspace.com/d2l/home/1643449';
   const tabs = new Map([[7, { id: 7, url: startUrl, status: 'complete' }]]);
   const store = { manual_pause_until: kind === 'manual' ? -1 : 0 };
@@ -26,6 +26,7 @@ async function run(kind) {
         async sendMessage(id, message) {
           actions.push(['message', id, message]);
           tabs.get(id).url = 'https://purdue.brightspace.com/d2l/login?logout=1';
+          if (cancelAt === 'brightspace') delete store.auth_flow;
           return true;
         },
         async create(value) {
@@ -46,6 +47,13 @@ async function run(kind) {
   vm.runInContext(source, context);
   const result = await new Promise(resolve => listener({ type: 'start-flow', kind,
     source: { id: 7, url: startUrl } }, {}, resolve));
+  if (cancelAt === 'brightspace') {
+    assert.equal(result.ok, false);
+    assert.equal(store.auth_flow, undefined);
+    assert.ok(!actions.some(([action, , url]) => action === 'update'
+      && url?.endsWith('/oauth2/v2.0/logout')));
+    return;
+  }
   assert.equal(result.ok, true);
   assert.equal(store.auth_flow.phase, 'microsoft');
   assert.ok(actions.some(([action, id, value]) => action === 'message'
@@ -53,6 +61,15 @@ async function run(kind) {
   assert.ok(actions.some(([action, , url]) => action === 'update'
     && url?.endsWith('/oauth2/v2.0/logout')), 'Microsoft sign-out starts after Brightspace logout');
   const flowId = store.auth_flow.id;
+  if (cancelAt === 'microsoft') {
+    delete store.auth_flow;
+    listener({ type: 'microsoft-signed-out', flowId }, { tab: { id: 8 } });
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(store.auth_flow, undefined);
+    assert.ok(!actions.some(([action, id, url]) => action === 'update'
+      && id === 7 && url === startUrl));
+    return;
+  }
   listener({ type: 'microsoft-signed-out', flowId }, { tab: { id: 999 } });
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(store.auth_flow.phase, 'microsoft', 'Ignore completion from another tab');
@@ -74,4 +91,6 @@ async function run(kind) {
 await run('switch');
 await run('manual');
 await run('logout');
-console.log('Passed: coordinated Brightspace/Microsoft logout, switch reload, manual pause, and general sign-out.');
+await run('switch', 'brightspace');
+await run('switch', 'microsoft');
+console.log('Passed: logout modes and canceled flows never restore account switching.');
