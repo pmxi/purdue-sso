@@ -15,7 +15,9 @@ async function showMode() {
     'manual_pause_until', 'auth_flow', 'enabled', 'username', 'password', 'totp_uri',
   ]);
   setBusy(starting || flow?.phase === 'logging-out' || flow?.phase === 'microsoft');
-  if (flow?.phase === 'error') state.textContent = `Sign-out stopped: ${flow.error}`;
+  if (flow?.phase === 'error') state.textContent = flow.version === chrome.runtime.getManifest().version
+    ? `Sign-out stopped: ${flow.error}`
+    : 'A previous sign-out attempt stopped. Choose a mode to continue.';
   else if (flow?.phase === 'signed-out') state.textContent = 'Signed out. Choose regular automatic sign-in when ready.';
   else if (flow?.kind === 'switch') state.textContent = flow.phase === 'choosing'
     ? 'Choose an account. Automatic sign-in will continue only for your saved account.'

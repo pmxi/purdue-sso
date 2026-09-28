@@ -12,6 +12,10 @@ function brightspace(url) {
   catch { return false; }
 }
 
+function brightspaceLogin(url) {
+  return brightspace(url) && new URL(url).pathname.startsWith('/d2l/login');
+}
+
 async function waitForPage(tabId, predicate) {
   for (let attempt = 0; attempt < 60; attempt++) {
     const tab = await chrome.tabs.get(tabId);
@@ -22,21 +26,25 @@ async function waitForPage(tabId, predicate) {
 }
 
 async function signOutBrightspace(source) {
+  if (brightspaceLogin(source.url)) return source.id;
   const tabs = await chrome.tabs.query({ url: 'https://purdue.brightspace.com/*' });
-  let tab = tabs.find(item => item.id === source.id && !new URL(item.url).pathname.startsWith('/d2l/login'))
-    || tabs.find(item => !new URL(item.url).pathname.startsWith('/d2l/login'));
+  const signedInPage = item => !brightspaceLogin(item.url)
+    && !new URL(item.url).pathname.startsWith('/d2l/lp/auth/');
+  let tab = tabs.find(item => item.id === source.id && signedInPage(item))
+    || tabs.find(signedInPage);
   if (!tab) {
     tab = await chrome.tabs.create({ url: 'https://purdue.brightspace.com/d2l/home/6824', active: false });
     tab = await waitForPage(tab.id, item => item.status === 'complete');
   }
   if (!brightspace(tab.url)) return tab.id;
-  if (new URL(tab.url).pathname.startsWith('/d2l/login')) return tab.id;
+  if (brightspaceLogin(tab.url)) return tab.id;
   let clicked = false;
   try { clicked = await chrome.tabs.sendMessage(tab.id, 'sign-out-brightspace'); }
   catch { /* Reload once if this tab predates the installed content script. */ }
   if (!clicked) {
     await chrome.tabs.reload(tab.id);
-    await waitForPage(tab.id, item => item.status === 'complete' && brightspace(item.url));
+    tab = await waitForPage(tab.id, item => item.status === 'complete' && brightspace(item.url));
+    if (brightspaceLogin(tab.url)) return tab.id;
     clicked = await chrome.tabs.sendMessage(tab.id, 'sign-out-brightspace');
   }
   if (!clicked) throw new Error('Brightspace logout action is unavailable on this page.');
@@ -49,6 +57,7 @@ async function startFlow(kind, source) {
   if (!['switch', 'manual', 'logout'].includes(kind)) throw new Error('Unknown sign-out action.');
   const flow = {
     id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    version: chrome.runtime.getManifest().version,
     kind, phase: 'logging-out', sourceTabId: source.id, sourceUrl: source.url || '',
   };
   await chrome.storage.local.set({ auth_flow: flow });

@@ -4,9 +4,13 @@ import vm from 'node:vm';
 
 const source = await readFile(new URL('../chrome-extension/background.js', import.meta.url), 'utf8');
 
-async function run(kind, cancelAt = '') {
-  const startUrl = 'https://purdue.brightspace.com/d2l/home/1643449';
+async function run(kind, cancelAt = '', loginPage = false) {
+  const startUrl = loginPage
+    ? 'https://purdue.brightspace.com/d2l/login?sessionExpired=1&target=%2fd2l%2fhome%2f1643449'
+    : 'https://purdue.brightspace.com/d2l/home/1643449';
   const tabs = new Map([[7, { id: 7, url: startUrl, status: 'complete' }]]);
+  if (loginPage) tabs.set(9, { id: 9,
+    url: 'https://purdue.brightspace.com/d2l/lp/auth/saml/error', status: 'complete' });
   const store = { manual_pause_until: kind === 'manual' ? -1 : 0 };
   const actions = [];
   let listener;
@@ -14,7 +18,7 @@ async function run(kind, cancelAt = '') {
   const context = vm.createContext({
     URL, Date, Math, Error, setTimeout,
     chrome: {
-      runtime: { onMessage: { addListener(fn) { listener = fn; } } },
+      runtime: { getManifest: () => ({ version: '1.0.10' }), onMessage: { addListener(fn) { listener = fn; } } },
       storage: { local: {
         async set(value) { Object.assign(store, value); },
         async get() { return { ...store }; },
@@ -47,6 +51,16 @@ async function run(kind, cancelAt = '') {
   vm.runInContext(source, context);
   const result = await new Promise(resolve => listener({ type: 'start-flow', kind,
     source: { id: 7, url: startUrl } }, {}, resolve));
+  if (loginPage) {
+    assert.equal(result.ok, true);
+    assert.equal(store.auth_flow.phase, 'microsoft');
+    assert.equal(store.auth_flow.version, '1.0.10');
+    assert.ok(!actions.some(([action, , value]) => action === 'message'
+      && value === 'sign-out-brightspace'), 'No Brightspace logout control is needed on its login page');
+    assert.ok(!actions.some(([action, , url]) => action === 'create'
+      && url?.includes('/d2l/home/')), 'Do not open an arbitrary Brightspace home page');
+    return;
+  }
   if (cancelAt === 'brightspace') {
     assert.equal(result.ok, false);
     assert.equal(store.auth_flow, undefined);
@@ -93,4 +107,6 @@ await run('manual');
 await run('logout');
 await run('switch', 'brightspace');
 await run('switch', 'microsoft');
-console.log('Passed: logout modes and canceled flows never restore account switching.');
+await run('logout', '', true);
+await run('switch', '', true);
+console.log('Passed: logout modes, canceled flows, and already-signed-out Brightspace pages.');

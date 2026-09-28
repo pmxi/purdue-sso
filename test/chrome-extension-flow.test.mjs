@@ -234,6 +234,7 @@ async function contentPage({ hostname, pathname, body, campus, enabled = true, m
   let queryGate;
   let configGate;
   let reloads = 0;
+  let storageChanged;
   const nodes = Object.fromEntries(['automatic', 'switch', 'manual', 'manual-length',
     'manual-question', 'manual-signout', 'manual-stay', 'signout', 'settings', 'retry', 'mode-state', 'status']
     .map(id => [id, { hidden: id === 'manual-question', textContent: '', value: '15',
@@ -251,9 +252,10 @@ async function contentPage({ hostname, pathname, body, campus, enabled = true, m
           async set(value) { Object.assign(store, value); },
           async remove(keys) { for (const key of Array.isArray(keys) ? keys : [keys]) delete store[key]; },
         },
-        onChanged: { addListener() {} },
+        onChanged: { addListener(listener) { storageChanged = listener; } },
       },
-      runtime: { openOptionsPage() {}, async sendMessage(request) { requests.push(request); return { ok: true }; } },
+      runtime: { getManifest: () => ({ version: '1.0.10' }), openOptionsPage() {},
+        async sendMessage(request) { requests.push(request); return { ok: true }; } },
       tabs: {
         async query() {
           if (queryGate) await queryGate;
@@ -306,6 +308,11 @@ async function contentPage({ hostname, pathname, body, campus, enabled = true, m
   assert.equal(requests.length, 5, 'Switch preflight starts one flow');
   assert.equal(requests[4].kind, 'switch');
   assert.equal(reloads, 1, 'Automatic did not reload while switch was starting');
+  store.auth_flow = { phase: 'error', version: '1.0.8', error: 'Brightspace could not open its Log Out control.' };
+  storageChanged();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.match(nodes['mode-state'].textContent, /previous sign-out attempt/i);
+  assert.doesNotMatch(nodes['mode-state'].textContent, /could not open/i);
 }
 
 console.log('Passed: campus, account picker, sign-out controls, switch flow, and manual confirmation.');

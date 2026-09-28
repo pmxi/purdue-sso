@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name Purdue automatic sign-in
 // @namespace https://github.com/pmxi/purdue-sso
-// @version 1.0.9
+// @version 1.0.10
 // @description Sign in to Purdue with your saved password and authenticator code.
 // @match https://sso.purdue.edu/*
 // @match https://idp.purdue.edu/*
