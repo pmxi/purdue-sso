@@ -39,7 +39,7 @@ async function signOutBrightspace(source) {
     await waitForPage(tab.id, item => item.status === 'complete' && brightspace(item.url));
     clicked = await chrome.tabs.sendMessage(tab.id, 'sign-out-brightspace');
   }
-  if (!clicked) throw new Error('Brightspace could not open its Log Out control.');
+  if (!clicked) throw new Error('Brightspace logout action is unavailable on this page.');
   await waitForPage(tab.id, item => brightspace(item.url)
     && new URL(item.url).pathname.startsWith('/d2l/login'));
   return tab.id;

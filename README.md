@@ -41,7 +41,7 @@ For Firefox private windows, allow Violentmonkey under **Extensions and Themes �
 
 ## Behavior
 
-- Runs on `sso.purdue.edu`, `idp.purdue.edu`, `login.microsoftonline.com`, and `purdue.brightspace.com`, over HTTPS and in the top-level page only. On Brightspace, it only selects the campus on the `/d2l/login` page and can sign out through the account menu when you request it from the popup.
+- Runs on `sso.purdue.edu`, `idp.purdue.edu`, `login.microsoftonline.com`, and `purdue.brightspace.com`, over HTTPS and in the top-level page only. On Brightspace, it selects the campus on the `/d2l/login` page. When you request sign-out from the Chrome popup, it invokes Brightspace's own logout action directly, even while the account menu is closed.
 - On Microsoft, requires Purdue's tenant, the configured account, or a recent continuation of that login. A different detected account prevents automation.
 - Fills username/password, chooses “Use a verification code” instead of app approval, and generates a TOTP locally with Web Crypto.
 - Checks “Don't show this again” and chooses **Yes** on “Stay signed in?”.

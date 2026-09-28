@@ -1,6 +1,6 @@
 {
   "name": "purdue-sso",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "private": true,
   "description": "Purdue SSO automation for Violentmonkey and Chrome",
   "scripts": {

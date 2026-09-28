@@ -157,7 +157,16 @@
   }
   async function signOutBrightspace() {
     if (!brightspace || location.pathname.toLowerCase() === '/d2l/login') return false;
-    let signOut = control(/^log out$/i);
+    // Brightspace renders its real logout action even while the menu is closed.
+    // Invoke that action directly, without depending on the avatar dropdown.
+    let signOut = Array.from(document.querySelectorAll('a[onclick]')).find(element =>
+      /^log out$/i.test((element.textContent || '').trim())
+      && /^D2L\.O\(/.test(element.getAttribute('onclick') || ''));
+    if (signOut) {
+      setTimeout(() => signOut.click(), 0);
+      return true;
+    }
+    signOut = control(/^log out$/i);
     if (!signOut) {
       const avatar = document.querySelector('d2l-labs-navigation-dropdown-button-custom[opener-label*="avatar" i]')
         ?.shadowRoot?.querySelector('button')

@@ -15,7 +15,7 @@ function element(text, onClick = () => {}) {
 }
 
 async function contentPage({ hostname, pathname, body, campus, enabled = true, manualPause = 0,
-  rows = [], controls = [], blocks = [], navigation = [], brand = false, avatar = null,
+  rows = [], controls = [], anchors = [], blocks = [], navigation = [], brand = false, avatar = null,
   authFlow = null, identities = [] }) {
   const changes = [];
   const messages = [];
@@ -49,6 +49,7 @@ async function contentPage({ hostname, pathname, body, campus, enabled = true, m
         };
       },
       querySelectorAll(selector) {
+        if (selector === 'a[onclick]') return anchors;
         if (selector === 'd2l-html-block[html]') return blocks;
         if (selector.startsWith('#displayName')) return identities;
         if (selector === 'button, a, [role="button"]'
@@ -104,6 +105,18 @@ async function contentPage({ hostname, pathname, body, campus, enabled = true, m
     body: 'Please choose your campus', campus: 'Purdue West Lafayette / Indianapolis',
     blocks: [block], navigation });
   assert.deepEqual(navigation, [], 'Never follow an unrelated stored campus URL');
+}
+
+{
+  const clicked = [];
+  const logout = element('Log Out', () => clicked.push('logout'));
+  logout.getClientRects = () => [];
+  logout.getAttribute = name => name === 'onclick' ? 'D2L.O("__g1",4)();return false;' : null;
+  const { messages } = await contentPage({ hostname: 'purdue.brightspace.com',
+    pathname: '/d2l/home/6824', body: 'Brightspace home', enabled: false, anchors: [logout] });
+  const result = await new Promise(resolve => messages[0]('sign-out-brightspace', null, resolve));
+  assert.equal(result, true);
+  assert.deepEqual(clicked, ['logout'], 'Invoke Brightspace logout without opening its menu');
 }
 
 {

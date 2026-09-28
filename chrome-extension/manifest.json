@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Purdue automatic sign-in",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Fill Purdue sign-in locally using your saved account and authenticator enrollment.",
   "permissions": ["storage", "activeTab"],
   "host_permissions": ["https://purdue.brightspace.com/*"],
