@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Purdue automatic sign-in",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Fill Purdue sign-in locally using your saved account and authenticator enrollment.",
   "permissions": ["storage", "activeTab"],
   "action": { "default_popup": "popup.html", "default_title": "Purdue automatic sign-in" },
@@ -10,7 +10,8 @@
     "matches": [
       "https://sso.purdue.edu/*",
       "https://idp.purdue.edu/*",
-      "https://login.microsoftonline.com/*"
+      "https://login.microsoftonline.com/*",
+      "https://purdue.brightspace.com/*"
     ],
     "js": ["content.js"],
     "run_at": "document_idle",

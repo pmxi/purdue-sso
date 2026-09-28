@@ -1,4 +1,4 @@
-const fields = ['username', 'password', 'totp_uri', 'enabled'];
+const fields = ['username', 'password', 'totp_uri', 'campus', 'enabled'];
 const status = document.querySelector('#status');
 const form = document.querySelector('#settings');
 
@@ -62,6 +62,7 @@ const saved = await chrome.storage.local.get(fields);
 for (const field of fields) {
   const input = document.querySelector(`#${field}`);
   if (field === 'enabled') input.checked = saved.enabled === true;
+  else if (field === 'campus') input.value = saved.campus || 'Purdue West Lafayette / Indianapolis';
   else input.value = saved[field] || '';
 }
 if (validTotpUri(saved.totp_uri || '')) await showCurrentCode(saved.totp_uri);
@@ -85,7 +86,7 @@ form.addEventListener('submit', async event => {
 });
 
 document.querySelector('#clear').addEventListener('click', async () => {
-  await chrome.storage.local.remove(fields);
+  await chrome.storage.local.remove([...fields, 'manual_pause_until']);
   form.reset();
   document.querySelector('#current-code').textContent = '';
   status.textContent = 'Settings cleared. Reload any open Purdue sign-in page.';

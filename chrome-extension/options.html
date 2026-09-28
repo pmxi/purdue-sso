@@ -7,14 +7,22 @@
   body { box-sizing: border-box; max-width: 42rem; margin: 2rem auto; padding: 0 1rem; font: 1rem/1.5 system-ui, sans-serif; color: #222; }
   h1 { font-size: 1.5rem; }
   label { display: block; margin: 1rem 0; font-weight: 600; }
-  input:not([type="checkbox"]) { display: block; box-sizing: border-box; width: 100%; padding: .55rem; font: inherit; }
+  input:not([type="checkbox"]), select { display: block; box-sizing: border-box; width: 100%; padding: .55rem; font: inherit; }
   input[type="checkbox"] { margin-right: .5rem; }
   button { padding: .55rem .85rem; font: inherit; }
   .actions { display: flex; gap: .75rem; }
   #status { min-height: 1.5em; }
 </style>
 <h1>Purdue automatic sign-in</h1>
-<p>Settings stay in this Chrome profile. The extension runs only on Purdue SSO and Microsoft sign-in pages. Anyone with access to this Chrome profile may be able to recover the password and authenticator secret.</p>
+<p>Settings stay in this Chrome profile. Anyone with access to this profile may be able to recover the password and authenticator secret.</p>
+<h2>Set up automatic sign-in</h2>
+<ol>
+  <li>Keep this unpacked extension folder in place. After updating its files, open <code>chrome://extensions</code> and click <strong>Reload</strong>.</li>
+  <li>At <a href="https://mysignins.microsoft.com/security-info" target="_blank" rel="noopener noreferrer">Microsoft Security info</a>, sign in with your existing method. Choose <strong>+ Add sign-in method → Microsoft Authenticator → I want to use a different authenticator app → Can’t scan QR Code?</strong> <a href="https://service.purdue.edu/TDClient/32/Purdue/KB/Article/2219/How-To-Set-Up-Authentication-Codes-with-Yubikeys-for-Microsoft-MFA" target="_blank" rel="noopener noreferrer">Purdue’s guide</a> shows this path. A URL beginning <code>mobileappcommunicator.auth.microsoft.com/activatev2</code> means you are in Microsoft Authenticator setup; go back and choose the different-app link.</li>
+  <li>Copy the <strong>Secret key</strong> into the field below. Enter your career account and password, choose your campus, enable automatic sign-in, then save. Use the displayed current code to verify the new method on Microsoft’s page. Keep your old method until verification succeeds.</li>
+  <li>Start sign-in from <a href="https://purdue.brightspace.com" target="_blank" rel="noopener noreferrer">Purdue Brightspace</a> or another Purdue service. To use another account, click this extension’s toolbar icon, pause automatic sign-in temporarily or until you resume it, then choose <strong>Sign out to switch accounts</strong> on a signed-in Brightspace tab. Complete Microsoft sign-out if asked, then return to Brightspace and choose your other account.</li>
+</ol>
+<p>Sign-out may still leave a Purdue SSO session active. If the next sign-in skips the authenticator screen, clearing site data only for Purdue sign-in and Microsoft sign-in sites is a fallback to test later; this extension does not clear cookies.</p>
 <form id="settings" autocomplete="off">
   <label>Career account
     <input id="username" name="username" required spellcheck="false" placeholder="username (without @purdue.edu)">
@@ -25,8 +33,16 @@
   <label>Authenticator setup key or enrollment URI
     <input id="totp_uri" name="totp_uri" type="password" required autocomplete="off" placeholder="Base32 key from Purdue, or otpauth://totp/…">
   </label>
-  <p>At <a href="https://mysignins.microsoft.com/security-info" target="_blank" rel="noopener noreferrer">Microsoft Security info</a>, add a different authenticator app and choose <strong>Can’t scan QR Code?</strong> Paste its secret key above. Keep your existing sign-in method until the new one is verified. A current six-digit code is not the secret key.</p>
+  <p>A current six-digit code is not the setup key. Never share the setup key in chat or a pull request.</p>
   <p>Current code for setup verification: <strong id="current-code" aria-live="polite"></strong> <button id="refresh-code" type="button">Refresh code</button></p>
+  <label>Campus
+    <select id="campus" name="campus">
+      <option>Purdue West Lafayette / Indianapolis</option>
+      <option>Purdue Fort Wayne</option>
+      <option>Purdue Global</option>
+      <option>Purdue Northwest</option>
+    </select>
+  </label>
   <label><input id="enabled" name="enabled" type="checkbox">Enable automatic sign-in</label>
   <div class="actions"><button type="submit">Save settings</button><button id="clear" type="button">Clear settings</button></div>
   <p id="status" role="status" aria-live="polite"></p>

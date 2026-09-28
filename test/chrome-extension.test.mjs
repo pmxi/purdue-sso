@@ -15,6 +15,7 @@ assert.deepEqual(manifest.content_scripts[0].matches, [
   'https://sso.purdue.edu/*',
   'https://idp.purdue.edu/*',
   'https://login.microsoftonline.com/*',
+  'https://purdue.brightspace.com/*',
 ]);
 assert.equal(manifest.content_scripts[0].all_frames, false);
 console.log('Passed: Chrome manifest scope.');
@@ -42,13 +43,14 @@ async function runContent(enabled) {
     sessionStorage: { getItem: () => null, setItem() {} },
     getComputedStyle: () => ({ visibility: 'visible' }),
     setInterval: () => 1,
+    clearInterval() {}, clearTimeout() {}, setTimeout: () => 1,
     document: { body: { innerText: 'Sign in Next' }, querySelectorAll(selector) {
       if (selector.startsWith('#displayName')) return [];
       if (selector.startsWith('input[name="loginfmt"]')) return [username];
       if (selector.startsWith('button, a,')) return [next];
       return [];
     } },
-    chrome: { storage: { local: { async get() {
+    chrome: { storage: { onChanged: { addListener() {} }, local: { async get() {
       storageReads++;
       return { username: 'test', password: 'dummy',
         totp_uri: 'otpauth://totp/Test?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ', enabled };
@@ -63,7 +65,7 @@ assert.deepEqual(await runContent(true), { submits: 1, storageReads: 1, username
 console.log('Passed: Chrome startup stays off until enabled and submits the configured Purdue account.');
 
 const listeners = {};
-const inputs = Object.fromEntries(['username', 'password', 'totp_uri', 'enabled', 'status', 'current-code']
+const inputs = Object.fromEntries(['username', 'password', 'totp_uri', 'campus', 'enabled', 'status', 'current-code']
   .map(key => [key, { value: '', checked: false, textContent: '' }]));
 let savedSettings;
 let removedSettings;
@@ -96,6 +98,7 @@ await listeners.submit({ preventDefault() {} });
 assert.equal(savedSettings.username, 'test');
 assert.equal(savedSettings.password, ' keep spaces ', 'Do not alter the password');
 assert.equal(savedSettings.enabled, true);
+assert.equal(savedSettings.campus, 'Purdue West Lafayette / Indianapolis');
 assert.equal(savedSettings.totp_uri, inputs.totp_uri.value);
 assert.equal(inputs['current-code'].textContent, generateTotp(inputs.totp_uri.value, 59_000));
 inputs.totp_uri.value = 'GEZD GNBV GY3T QOJQ GEZD GNBV GY3T QOJQ';
@@ -103,6 +106,6 @@ await listeners.submit({ preventDefault() {} });
 assert.equal(savedSettings.totp_uri, 'otpauth://totp/Purdue%3Atest%40purdue.edu?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ&issuer=Purdue');
 assert.equal(inputs['current-code'].textContent, generateTotp(savedSettings.totp_uri, 59_000));
 await listeners.clear();
-assert.equal(removedSettings.join(','), 'username,password,totp_uri,enabled');
+assert.equal(removedSettings.join(','), 'username,password,totp_uri,campus,enabled,manual_pause_until');
 assert.equal(inputs['current-code'].textContent, '');
 console.log('Passed: Chrome options accept a setup key, reject a one-time code, preserve credentials, and clear settings.');

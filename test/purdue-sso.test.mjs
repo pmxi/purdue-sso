@@ -8,7 +8,8 @@ import { generateTotp as referenceTotp } from './reference-totp.mjs';
 const config = { username: 'test', email: 'test@purdue.edu', password: 'dummy', totp_uri: 'otpauth://totp/Test?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ' };
 let source = await readFile(new URL('../purdue-sso.user.js', import.meta.url), 'utf8');
 source = source.replace(/const config = \{[\s\S]*?\n  \};/, 'const config = ' + JSON.stringify(config) + ';');
-source = source.replace('  void tick();', '  globalThis.testApi = { generateTotp, purdueContext, claim, fill, tick, visible }; return;');
+source = source.slice(0, source.lastIndexOf('  scheduleTicks();'))
+  + '  globalThis.testApi = { generateTotp, purdueContext, claim, fill, tick, visible, purdueAccountPicker, savedAccountTile }; return;\n})();';
 let identities = [];
 const session = new Map();
 class Input {

@@ -6,12 +6,14 @@ A Violentmonkey userscript and unpacked Chrome extension that automate Purdue si
 
 1. Download or clone this repository. Keep the `chrome-extension` folder in a stable local location.
 2. Open `chrome://extensions` in Chrome, turn on **Developer mode**, click **Load unpacked**, and select the `chrome-extension` folder.
-3. Open **Purdue automatic sign-in → Details → Extension options**. Enter your career account, password, and an authenticator setup key or existing `otpauth://totp/…` enrollment URI. Select **Enable automatic sign-in** and save.
-4. Start at a Purdue service such as [Brightspace](https://purdue.brightspace.com). The extension does not act on the bare `https://sso.purdue.edu/` page. If sign-in is interrupted, use **Retry on this tab** from the extension popup. To pause it, clear **Enable automatic sign-in** in its options and reload the sign-in page.
+3. Open **Purdue automatic sign-in → Details → Extension options**. Follow the setup instructions there, enter your career account, password, and an authenticator setup key or existing `otpauth://totp/…` enrollment URI, choose your campus, enable automatic sign-in, and save.
+4. Start at a Purdue service such as [Brightspace](https://purdue.brightspace.com). The extension selects your campus and saved account, then completes sign-in. If sign-in is interrupted, use **Retry on this tab** from the extension popup.
 
 The unpacked extension stays installed while the folder remains in place. When updating the repository, click **Reload** on its card in `chrome://extensions`. The extension runs in the Chrome profile where you installed it, and only on its three declared HTTPS sign-in origins. It uses local extension storage, not Chrome Sync. No credentials or authenticator secrets belong in this repository.
 
 To get a new setup key for a Purdue account that already has MFA, sign in at [Microsoft Security info](https://mysignins.microsoft.com/security-info) using your existing method. Choose **+ Add sign-in method → Microsoft Authenticator → Set up a different authenticator app → Can’t scan QR Code?** Copy the secret key into the extension options and save. Use the displayed current code to verify the new method in Microsoft Security info. Keep your existing method until the new method works. Purdue documents this flow in its [authentication code setup guide](https://service.purdue.edu/TDClient/32/Purdue/KB/Article/2219/How-To-Set-Up-Authentication-Codes-with-Yubikeys-for-Microsoft-MFA). Never put the key in an issue, PR, or chat.
+
+To sign in with another Purdue account, open the extension popup and choose **Manual sign-in** for 15 minutes, 30 minutes, 1 hour, or until you resume it. The popup then offers **Sign out to switch accounts** on a signed-in Brightspace tab. That action uses Brightspace’s own **Log Out** menu and opens Microsoft’s documented sign-out endpoint. Complete any Microsoft sign-out prompt, then return to Brightspace and select the other account. Brightspace does not provide SAML single logout, so this flow may still leave a Purdue SSO session active. If the next sign-in skips MFA, scoped site-data removal for Purdue and Microsoft sign-in origins is the fallback to investigate; this extension does not remove cookies. The timed pause expires automatically, and **Resume automatic sign-in now** ends any pause early. The extension does not act while paused.
 
 ## Violentmonkey userscript
 
@@ -37,7 +39,7 @@ For Firefox private windows, allow Violentmonkey under **Extensions and Themes �
 
 ## Behavior
 
-- Runs on `sso.purdue.edu`, `idp.purdue.edu`, and `login.microsoftonline.com`, over HTTPS and in the top-level page only.
+- Runs on `sso.purdue.edu`, `idp.purdue.edu`, `login.microsoftonline.com`, and `purdue.brightspace.com`, over HTTPS and in the top-level page only. On Brightspace, it only selects the campus on the `/d2l/login` page and can sign out through the account menu when you request it from the popup.
 - On Microsoft, requires Purdue's tenant, the configured account, or a recent continuation of that login. A different detected account prevents automation.
 - Fills username/password, chooses “Use a verification code” instead of app approval, and generates a TOTP locally with Web Crypto.
 - Checks “Don't show this again” and chooses **Yes** on “Stay signed in?”.

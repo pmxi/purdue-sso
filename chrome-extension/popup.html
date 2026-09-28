@@ -2,8 +2,20 @@
 <html lang="en">
 <meta charset="utf-8">
 <title>Purdue automatic sign-in</title>
-<style>body { min-width: 14rem; margin: 1rem; font: 14px/1.5 system-ui, sans-serif; } button { display: block; width: 100%; margin: .5rem 0; padding: .4rem; } #status { min-height: 1.5em; }</style>
+<style>body { min-width: 17rem; margin: 1rem; font: 14px/1.5 system-ui, sans-serif; } button { display: block; width: 100%; margin: .5rem 0; padding: .4rem; } #status { min-height: 1.5em; } .quiet { color: #555; }</style>
 <strong>Purdue automatic sign-in</strong>
+<p id="pause-state" role="status" aria-live="polite"></p>
+<label for="pause-length">Manual sign-in</label>
+<select id="pause-length">
+  <option value="15">15 minutes</option>
+  <option value="30">30 minutes</option>
+  <option value="60">1 hour</option>
+  <option value="until-resumed">Until I resume</option>
+</select>
+<button id="pause">Pause automatic sign-in</button>
+<button id="resume" hidden>Resume automatic sign-in now</button>
+<button id="signout" hidden>Sign out to switch accounts</button>
+<p class="quiet">This signs out of Brightspace and opens Microsoft’s sign-out page. If sign-in still skips MFA, use the scoped site-data fallback described in Settings.</p>
 <button id="settings">Settings</button>
 <button id="retry">Retry on this tab</button>
 <p id="status" role="status" aria-live="polite"></p>

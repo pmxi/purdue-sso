@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name Purdue automatic sign-in
 // @namespace https://github.com/pmxi/purdue-sso
-// @version 1.0.4
+// @version 1.0.5
 // @description Sign in to Purdue with your saved password and authenticator code.
 // @match https://sso.purdue.edu/*
 // @match https://idp.purdue.edu/*
@@ -33,17 +33,22 @@
   config.email = config.username + '@purdue.edu';
   const tenant = '4130bd39-7c53-419c-b1e5-8758d6d63f21';
   const microsoft = location.hostname === 'login.microsoftonline.com';
+  const brightspace = false;
   if (location.protocol !== 'https:' || ![
     'sso.purdue.edu', 'idp.purdue.edu', 'login.microsoftonline.com',
   ].includes(location.hostname)) return;
 
   const prefix = 'purdue-autologin:';
   const email = config.email.toLowerCase();
+  const campusChoice = config.campus || 'Purdue West Lafayette / Indianapolis';
   const enabled = GM_getValue('enabled', true);
   let stopped = !enabled;
+  let pausedUntil = 0;
   let busy = false;
   const done = new Set();
-  const started = Date.now();
+  let started = Date.now();
+  let timer;
+  let resumeTimer;
   GM_registerMenuCommand('Purdue: ' + (enabled ? 'pause' : 'enable') + ' automatic sign-in', () => {
     GM_setValue('enabled', !enabled);
     location.reload();
@@ -93,6 +98,23 @@
   function click(step, element) {
     if (element && claim(step)) element.click();
   }
+  function manualPaused(now = Date.now()) {
+    return pausedUntil === -1 || pausedUntil > now;
+  }
+  async function signOutBrightspace() {
+    if (!brightspace || location.pathname.toLowerCase() === '/d2l/login') return false;
+    let signOut = control(/^log out$/i);
+    if (!signOut) {
+      const avatar = Array.from(document.querySelectorAll('[aria-label*="avatar" i]')).find(visible);
+      if (!avatar) return false;
+      avatar.click();
+      await new Promise(resolve => setTimeout(resolve, 150));
+      signOut = control(/^log out$/i);
+    }
+    if (!signOut) return false;
+    setTimeout(() => signOut.click(), 0);
+    return true;
+  }
   function identity() {
     const candidates = Array.from(document.querySelectorAll(
       '#displayName, #signInName, #userDisplayName, input[name="login"], input[name="loginfmt"]',
@@ -112,6 +134,25 @@
       return true;
     }
     return Date.now() - Number(sessionStorage.getItem(prefix + 'context') || 0) < 300_000;
+  }
+
+  function purdueAccountPicker(text) {
+    if (!microsoft || !/pick an account/i.test(text)) return false;
+    const branded = /purdue university/i.test(text)
+      || !!document.querySelector('img[alt*="Purdue" i], [aria-label*="Purdue" i]');
+    return branded || location.pathname.toLowerCase().includes(tenant)
+      || Date.now() - Number(sessionStorage.getItem(prefix + 'context') || 0) < 300_000;
+  }
+
+  function savedAccountTile() {
+    const candidates = Array.from(document.querySelectorAll(
+      'button, a, [role="button"], [data-test-id], .table',
+    ));
+    return candidates.filter(element => {
+      if (!visible(element)) return false;
+      const addresses = (element.textContent || '').match(/[\w.+-]+@[\w.-]+\.[a-z]{2,}/gi) || [];
+      return addresses.length === 1 && addresses[0].toLowerCase() === email;
+    }).sort((a, b) => a.textContent.length - b.textContent.length)[0];
   }
 
   function decodeBase32(value) {
@@ -154,11 +195,25 @@
   }
 
   async function tick() {
-    if (stopped || busy || Date.now() - started > 180_000) return;
+    const now = Date.now();
+    if (stopped || busy || manualPaused(now)) return;
+    if (now - started > 180_000) return;
     busy = true;
     try {
-      if (!purdueContext()) return;
       const text = document.body?.innerText || '';
+      if (brightspace) {
+        if (location.pathname.toLowerCase() !== '/d2l/login') return;
+        const campus = Array.from(document.querySelectorAll('button, a, [role="button"]'))
+          .find(element => visible(element) && (element.innerText || element.textContent || '')
+            .replace(/\s+/g, ' ').trim().toLowerCase() === campusChoice.toLowerCase());
+        click('campus', campus);
+        return;
+      }
+      if (purdueAccountPicker(text)) {
+        click('account', savedAccountTile());
+        return;
+      }
+      if (!purdueContext()) return;
       // This is a separate post-authentication screen. Handle it before stale
       // login inputs or generic live-region alerts can mask the prompt.
       if (microsoft && /stay signed in\?/i.test(text)) {
@@ -207,17 +262,13 @@
         // Wait for a fresh code when the current one is about to expire.
         if (period - (Date.now() / 1000 % period) < 5) return;
         const code = await generateTotp(config.totp_uri);
-        if (!stopped && visible(otp) && visible(submit) && purdueContext() && fill(otp, code)) click('otp', submit);
+        if (!stopped && !manualPaused() && visible(otp) && visible(submit)
+          && purdueContext() && fill(otp, code)) click('otp', submit);
         return;
       }
       if (username) {
         const next = control(/^(next|continue|sign in)$/i);
         if (next && fill(username, microsoft ? config.email : config.username)) click('username', next);
-        return;
-      }
-      if (/pick an account/i.test(text)) {
-        const account = control(new RegExp('^' + email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?:\\s|$)', 'i'));
-        click('account', account);
         return;
       }
     } catch {
@@ -227,9 +278,21 @@
       busy = false;
     }
   }
-  void tick();
-  const timer = setInterval(() => {
-    if (stopped || Date.now() - started > 180_000) clearInterval(timer);
-    else void tick();
-  }, 600);
+  function scheduleTicks() {
+    clearInterval(timer);
+    clearTimeout(resumeTimer);
+    if (stopped || pausedUntil === -1) return;
+    if (pausedUntil > Date.now()) {
+      resumeTimer = setTimeout(() => { pausedUntil = 0; scheduleTicks(); }, pausedUntil - Date.now());
+      return;
+    }
+    pausedUntil = 0;
+    started = Date.now();
+    void tick();
+    timer = setInterval(() => {
+      if (stopped || Date.now() - started > 180_000) clearInterval(timer);
+      else void tick();
+    }, 600);
+  }
+  scheduleTicks();
 })();
