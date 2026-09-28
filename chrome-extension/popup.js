@@ -3,6 +3,7 @@ const state = document.querySelector('#mode-state');
 const question = document.querySelector('#manual-question');
 const modeButtons = ['#automatic', '#switch', '#manual', '#signout']
   .map(selector => document.querySelector(selector));
+let starting = false;
 
 function setBusy(busy) {
   for (const button of modeButtons) button.disabled = busy;
@@ -13,7 +14,7 @@ async function showMode() {
     username, password, totp_uri: secret } = await chrome.storage.local.get([
     'manual_pause_until', 'auth_flow', 'enabled', 'username', 'password', 'totp_uri',
   ]);
-  setBusy(flow?.phase === 'logging-out' || flow?.phase === 'microsoft');
+  setBusy(starting || flow?.phase === 'logging-out' || flow?.phase === 'microsoft');
   if (flow?.phase === 'error') state.textContent = `Sign-out stopped: ${flow.error}`;
   else if (flow?.phase === 'signed-out') state.textContent = 'Signed out. Choose regular automatic sign-in when ready.';
   else if (flow?.kind === 'switch') state.textContent = flow.phase === 'choosing'
@@ -27,18 +28,22 @@ async function showMode() {
 }
 
 async function startFlow(kind) {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (!tab?.id) { status.textContent = 'Open a browser tab and try again.'; return; }
-  status.textContent = 'Signing out…';
+  if (starting) return;
+  starting = true;
   setBusy(true);
   try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab?.id) { status.textContent = 'Open a browser tab and try again.'; return; }
+    status.textContent = 'Signing out…';
     const result = await chrome.runtime.sendMessage({ type: 'start-flow', kind,
       source: { id: tab.id, url: tab.url || '' } });
     status.textContent = result?.ok ? 'Sign-out started.' : result?.error || 'Sign-out could not start.';
   } catch {
     status.textContent = 'Sign-out could not start. Reload the extension and try again.';
+  } finally {
+    starting = false;
+    await showMode();
   }
-  await showMode();
 }
 
 document.querySelector('#automatic').addEventListener('click', async () => {

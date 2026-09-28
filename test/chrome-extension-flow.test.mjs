@@ -218,6 +218,7 @@ async function contentPage({ hostname, pathname, body, campus, enabled = true, m
   const listeners = {};
   const store = { manual_pause_until: 0, enabled: true, username: 'test', password: 'dummy', totp_uri: uri };
   const requests = [];
+  let queryGate;
   const nodes = Object.fromEntries(['automatic', 'switch', 'manual', 'manual-length',
     'manual-question', 'manual-signout', 'manual-stay', 'signout', 'settings', 'retry', 'mode-state', 'status']
     .map(id => [id, { hidden: id === 'manual-question', textContent: '', value: '15',
@@ -236,7 +237,10 @@ async function contentPage({ hostname, pathname, body, campus, enabled = true, m
       },
       runtime: { openOptionsPage() {}, async sendMessage(request) { requests.push(request); return { ok: true }; } },
       tabs: {
-        async query() { return [{ id: 7, url: 'https://purdue.brightspace.com/d2l/home/6824' }]; },
+        async query() {
+          if (queryGate) await queryGate;
+          return [{ id: 7, url: 'https://purdue.brightspace.com/d2l/home/6824' }];
+        },
         async sendMessage() { return true; },
         async reload() {},
       },
@@ -265,6 +269,14 @@ async function contentPage({ hostname, pathname, body, campus, enabled = true, m
   assert.equal(store.manual_pause_until, -1);
   await listeners.automatic();
   assert.equal(store.manual_pause_until, undefined);
+  let releaseQuery;
+  queryGate = new Promise(resolve => { releaseQuery = resolve; });
+  const firstSignout = listeners.signout();
+  const secondSignout = listeners.signout();
+  assert.equal(nodes.signout.disabled, true, 'Mode controls disable before the tab query resolves');
+  releaseQuery();
+  await Promise.all([firstSignout, secondSignout]);
+  assert.equal(requests.length, 4, 'Rapid repeated clicks start only one sign-out');
 }
 
 console.log('Passed: campus, account picker, sign-out controls, switch flow, and manual confirmation.');
