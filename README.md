@@ -6,10 +6,12 @@ A Violentmonkey userscript and unpacked Chrome extension that automate Purdue si
 
 1. Download or clone this repository. Keep the `chrome-extension` folder in a stable local location.
 2. Open `chrome://extensions` in Chrome, turn on **Developer mode**, click **Load unpacked**, and select the `chrome-extension` folder.
-3. Open **Purdue automatic sign-in → Details → Extension options**. Enter your career account, password, and existing `otpauth://totp/…` authenticator enrollment URI. Select **Enable automatic sign-in** and save.
+3. Open **Purdue automatic sign-in → Details → Extension options**. Enter your career account, password, and an authenticator setup key or existing `otpauth://totp/…` enrollment URI. Select **Enable automatic sign-in** and save.
 4. Start at a Purdue service such as [Brightspace](https://purdue.brightspace.com). The extension does not act on the bare `https://sso.purdue.edu/` page. If sign-in is interrupted, use **Retry on this tab** from the extension popup. To pause it, clear **Enable automatic sign-in** in its options and reload the sign-in page.
 
 The unpacked extension stays installed while the folder remains in place. When updating the repository, click **Reload** on its card in `chrome://extensions`. The extension runs in the Chrome profile where you installed it, and only on its three declared HTTPS sign-in origins. It uses local extension storage, not Chrome Sync. No credentials or authenticator secrets belong in this repository.
+
+To get a new setup key for a Purdue account that already has MFA, sign in at [Microsoft Security info](https://mysignins.microsoft.com/security-info) using your existing method. Choose **+ Add sign-in method → Microsoft Authenticator → Set up a different authenticator app → Can’t scan QR Code?** Copy the secret key into the extension options and save. Use the displayed current code to verify the new method in Microsoft Security info. Keep your existing method until the new method works. Purdue documents this flow in its [authentication code setup guide](https://service.purdue.edu/TDClient/32/Purdue/KB/Article/2219/How-To-Set-Up-Authentication-Codes-with-Yubikeys-for-Microsoft-MFA). Never put the key in an issue, PR, or chat.
 
 ## Violentmonkey userscript
 

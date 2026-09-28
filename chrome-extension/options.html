@@ -22,10 +22,11 @@
   <label>Password
     <input id="password" name="password" type="password" required autocomplete="off">
   </label>
-  <label>Existing authenticator enrollment URI
-    <input id="totp_uri" name="totp_uri" type="password" required autocomplete="off" placeholder="otpauth://totp/…?secret=…">
+  <label>Authenticator setup key or enrollment URI
+    <input id="totp_uri" name="totp_uri" type="password" required autocomplete="off" placeholder="Base32 key from Purdue, or otpauth://totp/…">
   </label>
-  <p>A current six-digit code is not an enrollment URI. This extension cannot enroll an authenticator or recover its secret.</p>
+  <p>At <a href="https://mysignins.microsoft.com/security-info" target="_blank" rel="noopener noreferrer">Microsoft Security info</a>, add a different authenticator app and choose <strong>Can’t scan QR Code?</strong> Paste its secret key above. Keep your existing sign-in method until the new one is verified. A current six-digit code is not the secret key.</p>
+  <p>Current code for setup verification: <strong id="current-code" aria-live="polite"></strong> <button id="refresh-code" type="button">Refresh code</button></p>
   <label><input id="enabled" name="enabled" type="checkbox">Enable automatic sign-in</label>
   <div class="actions"><button type="submit">Save settings</button><button id="clear" type="button">Clear settings</button></div>
   <p id="status" role="status" aria-live="polite"></p>

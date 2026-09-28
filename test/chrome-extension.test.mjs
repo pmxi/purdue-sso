@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { webcrypto } from 'node:crypto';
 import vm from 'node:vm';
+import { generateTotp } from './reference-totp.mjs';
 
 const root = new URL('../', import.meta.url);
 const manifest = JSON.parse(await readFile(new URL('chrome-extension/manifest.json', root), 'utf8'));
@@ -62,17 +63,19 @@ assert.deepEqual(await runContent(true), { submits: 1, storageReads: 1, username
 console.log('Passed: Chrome startup stays off until enabled and submits the configured Purdue account.');
 
 const listeners = {};
-const inputs = Object.fromEntries(['username', 'password', 'totp_uri', 'enabled', 'status']
+const inputs = Object.fromEntries(['username', 'password', 'totp_uri', 'enabled', 'status', 'current-code']
   .map(key => [key, { value: '', checked: false, textContent: '' }]));
 let savedSettings;
 let removedSettings;
 const form = { addEventListener: (name, handler) => { listeners[name] = handler; }, reset() {} };
 const clearButton = { addEventListener: (name, handler) => { listeners.clear = handler; } };
+const refreshButton = { addEventListener: (name, handler) => { listeners.refresh = handler; } };
 const optionsContext = vm.createContext({
-  URL,
+  URL, crypto: webcrypto, Date: class extends Date { static now() { return 59_000; } },
   document: { querySelector(selector) {
     if (selector === '#settings') return form;
     if (selector === '#clear') return clearButton;
+    if (selector === '#refresh-code') return refreshButton;
     return inputs[selector.slice(1)];
   } },
   chrome: { storage: { local: {
@@ -94,6 +97,12 @@ assert.equal(savedSettings.username, 'test');
 assert.equal(savedSettings.password, ' keep spaces ', 'Do not alter the password');
 assert.equal(savedSettings.enabled, true);
 assert.equal(savedSettings.totp_uri, inputs.totp_uri.value);
+assert.equal(inputs['current-code'].textContent, generateTotp(inputs.totp_uri.value, 59_000));
+inputs.totp_uri.value = 'GEZD GNBV GY3T QOJQ GEZD GNBV GY3T QOJQ';
+await listeners.submit({ preventDefault() {} });
+assert.equal(savedSettings.totp_uri, 'otpauth://totp/Purdue%3Atest%40purdue.edu?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ&issuer=Purdue');
+assert.equal(inputs['current-code'].textContent, generateTotp(savedSettings.totp_uri, 59_000));
 await listeners.clear();
 assert.equal(removedSettings.join(','), 'username,password,totp_uri,enabled');
-console.log('Passed: Chrome options reject a one-time code, preserve credentials, and clear settings.');
+assert.equal(inputs['current-code'].textContent, '');
+console.log('Passed: Chrome options accept a setup key, reject a one-time code, preserve credentials, and clear settings.');
