@@ -2,10 +2,11 @@
   "name": "purdue-sso",
   "version": "1.0.4",
   "private": true,
-  "description": "Violentmonkey userscript for Purdue SSO",
+  "description": "Purdue SSO automation for Violentmonkey and Chrome",
   "scripts": {
-    "test": "node test/purdue-sso.test.mjs",
-    "check": "node --check purdue-sso.user.js"
+    "test": "node test/purdue-sso.test.mjs && node test/chrome-extension.test.mjs",
+    "check": "node --check purdue-sso.user.js && node scripts/build-chrome-extension.mjs --check && node --check chrome-extension/content.js && node --check chrome-extension/options.js && node --check chrome-extension/popup.js",
+    "build:chrome": "node scripts/build-chrome-extension.mjs"
   },
   "engines": {
     "node": ">=20"

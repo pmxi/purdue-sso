@@ -1,0 +1,47 @@
+import { readFile, writeFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+
+const root = new URL('../', import.meta.url);
+const userscript = await readFile(new URL('purdue-sso.user.js', root), 'utf8');
+const start = userscript.indexOf('  function visible(element) {');
+const end = userscript.lastIndexOf('})();');
+if (start < 0 || end <= start) throw new Error('Userscript layout changed; update the extension builder.');
+
+const content = `// Generated from purdue-sso.user.js by scripts/build-chrome-extension.mjs.
+// Edit the userscript's shared sign-in logic, then run npm run build:chrome.
+(async () => {
+  'use strict';
+  const config = await chrome.storage.local.get(['username', 'password', 'totp_uri', 'enabled']);
+  if (!config.enabled || !config.username || !config.password || !config.totp_uri) return;
+  config.username = config.username.trim().replace(/@purdue\\.edu$/i, '');
+  config.email = config.username + '@purdue.edu';
+  const tenant = '4130bd39-7c53-419c-b1e5-8758d6d63f21';
+  const microsoft = location.hostname === 'login.microsoftonline.com';
+  if (location.protocol !== 'https:' || ![
+    'sso.purdue.edu', 'idp.purdue.edu', 'login.microsoftonline.com',
+  ].includes(location.hostname)) return;
+
+  const prefix = 'purdue-autologin:';
+  const email = config.email.toLowerCase();
+  let stopped = false;
+  let busy = false;
+  const done = new Set();
+  const started = Date.now();
+  chrome.runtime.onMessage.addListener(message => {
+    if (message !== 'retry-sign-in') return;
+    for (const key of Object.keys(sessionStorage)) {
+      if (key.startsWith(prefix)) sessionStorage.removeItem(key);
+    }
+    location.reload();
+  });
+
+${userscript.slice(start, end)}
+})();
+`;
+const target = new URL('chrome-extension/content.js', root);
+if (process.argv.includes('--check')) {
+  const existing = await readFile(target, 'utf8');
+  if (existing !== content) throw new Error(`${fileURLToPath(target)} is stale. Run npm run build:chrome.`);
+} else {
+  await writeFile(target, content);
+}

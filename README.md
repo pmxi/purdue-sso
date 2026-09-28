@@ -1,8 +1,17 @@
 # Purdue SSO
 
-A Violentmonkey userscript that automates Purdue sign-in: username, password, authenticator codes, and the “Stay signed in?” prompt.
+A Violentmonkey userscript and unpacked Chrome extension that automate Purdue sign-in: username, password, authenticator codes, and the “Stay signed in?” prompt.
 
-## Install and configure
+## Chrome extension
+
+1. Download or clone this repository. Keep the `chrome-extension` folder in a stable local location.
+2. Open `chrome://extensions` in Chrome, turn on **Developer mode**, click **Load unpacked**, and select the `chrome-extension` folder.
+3. Open **Purdue automatic sign-in → Details → Extension options**. Enter your career account, password, and existing `otpauth://totp/…` authenticator enrollment URI. Select **Enable automatic sign-in** and save.
+4. Start at a Purdue service such as [Brightspace](https://purdue.brightspace.com). The extension does not act on the bare `https://sso.purdue.edu/` page. If sign-in is interrupted, use **Retry on this tab** from the extension popup. To pause it, clear **Enable automatic sign-in** in its options and reload the sign-in page.
+
+The unpacked extension stays installed while the folder remains in place. When updating the repository, click **Reload** on its card in `chrome://extensions`. The extension runs in the Chrome profile where you installed it, and only on its three declared HTTPS sign-in origins. It uses local extension storage, not Chrome Sync. No credentials or authenticator secrets belong in this repository.
+
+## Violentmonkey userscript
 
 1. Install [Violentmonkey](https://violentmonkey.github.io/get-it/).
 2. Open [purdue-sso.user.js](https://raw.githubusercontent.com/pmxi/purdue-sso/main/purdue-sso.user.js) and install it. Alternatively, create a new script in Violentmonkey and paste the file's contents.
@@ -39,9 +48,9 @@ The bare `https://sso.purdue.edu/` address is not a login entry point. Start fro
 
 ## Credential handling
 
-The installed copy stores the password and authenticator secret together in source code. Anyone who can read that copy or its exports can read both. This reduces the separation normally provided by two-factor authentication.
+Both installation methods store the password and authenticator secret together in the local browser profile. Anyone who can access that profile can potentially read both. A Violentmonkey export can also contain the credentials. This reduces the separation normally provided by two-factor authentication. Use a Chrome profile on a device you control, and clear the extension settings before sharing the profile. The Chrome extension stores the settings in `chrome.storage.local`; the userscript stores them in its installed source code.
 
-There are no external libraries, telemetry, or network requests made by the script itself. It fills the normal Purdue/Microsoft login forms. It uses Violentmonkey's isolated content context; its session-storage markers contain timestamps, not credentials. See the official [metadata](https://violentmonkey.github.io/api/metadata-block/) and [API](https://violentmonkey.github.io/api/gm/) documentation.
+There are no external libraries, telemetry, or network requests made by either implementation. They fill the normal Purdue/Microsoft login forms. Their session-storage markers contain timestamps, not credentials. See the official [metadata](https://violentmonkey.github.io/api/metadata-block/) and [API](https://violentmonkey.github.io/api/gm/) documentation for the userscript.
 
 ## Development
 
@@ -50,7 +59,10 @@ Requires Node.js 20 or newer. No dependencies to install.
 ```sh
 npm test
 npm run check
+npm run build:chrome
 ```
+
+The Chrome content script is generated from the userscript's sign-in logic. Run `npm run build:chrome` after changing that logic and commit the generated file. `npm run check` verifies it is current.
 
 Tests use synthetic credentials and public TOTP vectors. They cover TOTP generation, account guards, repeated submissions, input handling, the off-screen password field on Microsoft's username screen, the stay-signed-in checkbox/Yes sequence, and recovery through delayed authentication alternatives after an error. DOM tests simulate the forms; they do not sign in to a real account.
 
