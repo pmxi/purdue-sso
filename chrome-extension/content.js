@@ -2,9 +2,9 @@
 // Edit the userscript's shared sign-in logic, then run npm run build:chrome.
 (async () => {
   'use strict';
-  const config = await chrome.storage.local.get(['username', 'password', 'totp_uri', 'enabled', 'campus', 'manual_pause_until']);
+  const config = await chrome.storage.local.get(['username', 'password', 'totp_uri', 'enabled', 'campus', 'manual_pause_until', 'auth_flow']);
   const ready = config.enabled && config.username && config.password && config.totp_uri;
-  config.username = config.username.trim().replace(/@purdue\.edu$/i, '');
+  config.username = (config.username || '').trim().replace(/@purdue\.edu$/i, '');
   config.email = config.username + '@purdue.edu';
   const tenant = '4130bd39-7c53-419c-b1e5-8758d6d63f21';
   const microsoft = location.hostname === 'login.microsoftonline.com';
@@ -23,9 +23,53 @@
   let started = Date.now();
   let timer;
   let resumeTimer;
+  let authFlow = config.auth_flow || null;
+  async function setAuthFlow(next) {
+    authFlow = next;
+    if (next) await chrome.storage.local.set({ auth_flow: next });
+    else await chrome.storage.local.remove('auth_flow');
+    scheduleTicks();
+  }
+  async function flowStep(text) {
+    if (!authFlow) return false;
+    if (authFlow.phase === 'logging-out') return true;
+    if (authFlow.phase === 'microsoft') {
+      if (microsoft && /which account do you want to sign out of\?/i.test(text)) {
+        click('microsoft-signout:' + authFlow.id, savedAccountTile());
+      } else if (microsoft && /you signed out of your account/i.test(text)
+        && !done.has('microsoft-signed-out:' + authFlow.id)) {
+        done.add('microsoft-signed-out:' + authFlow.id);
+        void chrome.runtime.sendMessage({ type: 'microsoft-signed-out', flowId: authFlow.id });
+      }
+      return true;
+    }
+    if (authFlow.phase === 'signed-out') return true;
+    if (authFlow.phase === 'other') {
+      if (brightspace && location.pathname.toLowerCase() !== '/d2l/login') await setAuthFlow(null);
+      return true;
+    }
+    if (authFlow.phase !== 'choosing') return true;
+    if (brightspace) {
+      if (location.pathname.toLowerCase() !== '/d2l/login') await setAuthFlow(null);
+      return location.pathname.toLowerCase() !== '/d2l/login';
+    }
+    if (!microsoft) return false;
+    if (purdueAccountPicker(text)) return true;
+    const accounts = identity();
+    if (accounts.includes(email)) {
+      await setAuthFlow(null);
+      return false;
+    }
+    if (accounts.some(account => account !== config.username.toLowerCase())) {
+      await setAuthFlow({ ...authFlow, phase: 'other' });
+    }
+    return true;
+  }
   chrome.storage.onChanged.addListener((changes, area) => {
-    if (area !== 'local' || !changes.manual_pause_until) return;
-    pausedUntil = Number(changes.manual_pause_until.newValue) || 0;
+    if (area !== 'local') return;
+    if (changes.manual_pause_until) pausedUntil = Number(changes.manual_pause_until.newValue) || 0;
+    if (changes.auth_flow) authFlow = changes.auth_flow.newValue || null;
+    if (!changes.manual_pause_until && !changes.auth_flow) return;
     scheduleTicks();
   });
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
@@ -37,6 +81,7 @@
       return;
     }
     if (message === 'sign-out-brightspace') {
+      authFlow = { phase: 'logging-out' };
       void signOutBrightspace().then(sendResponse);
       return true;
     }
@@ -114,7 +159,9 @@
     if (!brightspace || location.pathname.toLowerCase() === '/d2l/login') return false;
     let signOut = control(/^log out$/i);
     if (!signOut) {
-      const avatar = Array.from(document.querySelectorAll('[aria-label*="avatar" i]')).find(visible);
+      const avatar = document.querySelector('d2l-labs-navigation-dropdown-button-custom[opener-label*="avatar" i]')
+        ?.shadowRoot?.querySelector('button')
+        || Array.from(document.querySelectorAll('[aria-label*="avatar" i]')).find(visible);
       if (!avatar) return false;
       avatar.click();
       await new Promise(resolve => setTimeout(resolve, 150));
@@ -205,11 +252,12 @@
 
   async function tick() {
     const now = Date.now();
-    if (stopped || busy || manualPaused(now)) return;
-    if (now - started > 180_000) return;
+    if (busy || (stopped && !authFlow) || (manualPaused(now) && !authFlow)) return;
+    if (!authFlow && now - started > 180_000) return;
     busy = true;
     try {
       const text = document.body?.innerText || '';
+      if (await flowStep(text)) return;
       if (brightspace) {
         if (location.pathname.toLowerCase() !== '/d2l/login') return;
         click('campus', campusLink());
@@ -287,16 +335,16 @@
   function scheduleTicks() {
     clearInterval(timer);
     clearTimeout(resumeTimer);
-    if (stopped || pausedUntil === -1) return;
-    if (pausedUntil > Date.now()) {
+    if ((stopped || pausedUntil === -1) && !authFlow) return;
+    if (pausedUntil > Date.now() && !authFlow) {
       resumeTimer = setTimeout(() => { pausedUntil = 0; scheduleTicks(); }, pausedUntil - Date.now());
       return;
     }
-    pausedUntil = 0;
+    if (pausedUntil !== -1 && pausedUntil <= Date.now()) pausedUntil = 0;
     started = Date.now();
     void tick();
     timer = setInterval(() => {
-      if (stopped || Date.now() - started > 180_000) clearInterval(timer);
+      if ((stopped || Date.now() - started > 180_000) && !authFlow) clearInterval(timer);
       else void tick();
     }, 600);
   }

@@ -13,6 +13,8 @@ const optionsSource = await readFile(new URL('chrome-extension/options.js', root
 assert.equal(manifest.manifest_version, 3);
 assert.equal(manifest.version, packageJson.version, 'Keep extension and package versions aligned');
 assert.deepEqual(manifest.permissions, ['storage', 'activeTab']);
+assert.deepEqual(manifest.host_permissions, ['https://purdue.brightspace.com/*']);
+assert.equal(manifest.background.service_worker, 'background.js');
 assert.deepEqual(manifest.content_scripts[0].matches, [
   'https://sso.purdue.edu/*',
   'https://idp.purdue.edu/*',
@@ -108,6 +110,6 @@ await listeners.submit({ preventDefault() {} });
 assert.equal(savedSettings.totp_uri, 'otpauth://totp/Purdue%3Atest%40purdue.edu?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ&issuer=Purdue');
 assert.equal(inputs['current-code'].textContent, generateTotp(savedSettings.totp_uri, 59_000));
 await listeners.clear();
-assert.equal(removedSettings.join(','), 'username,password,totp_uri,campus,enabled,manual_pause_until');
+assert.equal(removedSettings.join(','), 'username,password,totp_uri,campus,enabled,manual_pause_until,auth_flow');
 assert.equal(inputs['current-code'].textContent, '');
 console.log('Passed: Chrome options accept a setup key, reject a one-time code, preserve credentials, and clear settings.');

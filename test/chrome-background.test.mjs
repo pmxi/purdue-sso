@@ -1,0 +1,77 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import vm from 'node:vm';
+
+const source = await readFile(new URL('../chrome-extension/background.js', import.meta.url), 'utf8');
+
+async function run(kind) {
+  const startUrl = 'https://purdue.brightspace.com/d2l/home/1643449';
+  const tabs = new Map([[7, { id: 7, url: startUrl, status: 'complete' }]]);
+  const store = { manual_pause_until: kind === 'manual' ? -1 : 0 };
+  const actions = [];
+  let listener;
+  let nextId = 8;
+  const context = vm.createContext({
+    URL, Date, Math, Error, setTimeout,
+    chrome: {
+      runtime: { onMessage: { addListener(fn) { listener = fn; } } },
+      storage: { local: {
+        async set(value) { Object.assign(store, value); },
+        async get() { return { ...store }; },
+        async remove(key) { delete store[key]; },
+      } },
+      tabs: {
+        async query() { return Array.from(tabs.values()).filter(tab => tab.url.startsWith('https://purdue.brightspace.com/')); },
+        async get(id) { return tabs.get(id); },
+        async sendMessage(id, message) {
+          actions.push(['message', id, message]);
+          tabs.get(id).url = 'https://purdue.brightspace.com/d2l/login?logout=1';
+          return true;
+        },
+        async create(value) {
+          const tab = { id: nextId++, url: value.url, status: 'complete' };
+          tabs.set(tab.id, tab);
+          actions.push(['create', tab.id, value.url]);
+          return tab;
+        },
+        async update(id, value) {
+          actions.push(['update', id, value.url]);
+          Object.assign(tabs.get(id), value);
+          return tabs.get(id);
+        },
+        async remove(id) { actions.push(['remove', id]); tabs.delete(id); },
+      },
+    },
+  });
+  vm.runInContext(source, context);
+  const result = await new Promise(resolve => listener({ type: 'start-flow', kind,
+    source: { id: 7, url: startUrl } }, {}, resolve));
+  assert.equal(result.ok, true);
+  assert.equal(store.auth_flow.phase, 'microsoft');
+  assert.ok(actions.some(([action, id, value]) => action === 'message'
+    && id === 7 && value === 'sign-out-brightspace'));
+  assert.ok(actions.some(([action, , url]) => action === 'update'
+    && url?.endsWith('/oauth2/v2.0/logout')), 'Microsoft sign-out starts after Brightspace logout');
+  const flowId = store.auth_flow.id;
+  listener({ type: 'microsoft-signed-out', flowId }, { tab: { id: 999 } });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(store.auth_flow.phase, 'microsoft', 'Ignore completion from another tab');
+  listener({ type: 'microsoft-signed-out', flowId }, { tab: { id: 8 } });
+  await new Promise(resolve => setImmediate(resolve));
+  if (kind === 'switch') {
+    assert.equal(store.auth_flow.phase, 'choosing');
+    assert.equal(tabs.get(7).url, startUrl, 'Reload the original page to reach the account picker');
+  } else if (kind === 'manual') {
+    assert.equal(store.auth_flow, undefined);
+    assert.equal(store.manual_pause_until, -1, 'Sign-out preserves complete manual');
+  } else {
+    assert.equal(store.auth_flow.phase, 'signed-out');
+    assert.equal(tabs.get(7).url, 'https://purdue.brightspace.com/d2l/login?logout=1');
+  }
+  assert.ok(actions.some(([action, id]) => action === 'remove' && id === 8));
+}
+
+await run('switch');
+await run('manual');
+await run('logout');
+console.log('Passed: coordinated Brightspace/Microsoft logout, switch reload, manual pause, and general sign-out.');

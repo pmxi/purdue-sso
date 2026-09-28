@@ -86,7 +86,7 @@ form.addEventListener('submit', async event => {
 });
 
 document.querySelector('#clear').addEventListener('click', async () => {
-  await chrome.storage.local.remove([...fields, 'manual_pause_until']);
+  await chrome.storage.local.remove([...fields, 'manual_pause_until', 'auth_flow']);
   form.reset();
   document.querySelector('#current-code').textContent = '';
   status.textContent = 'Settings cleared. Reload any open Purdue sign-in page.';
