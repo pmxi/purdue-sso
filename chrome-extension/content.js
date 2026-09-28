@@ -3,7 +3,7 @@
 (async () => {
   'use strict';
   const config = await chrome.storage.local.get(['username', 'password', 'totp_uri', 'enabled', 'campus', 'manual_pause_until']);
-  if (!config.enabled || !config.username || !config.password || !config.totp_uri) return;
+  const ready = config.enabled && config.username && config.password && config.totp_uri;
   config.username = config.username.trim().replace(/@purdue\.edu$/i, '');
   config.email = config.username + '@purdue.edu';
   const tenant = '4130bd39-7c53-419c-b1e5-8758d6d63f21';
@@ -16,7 +16,7 @@
   const prefix = 'purdue-autologin:';
   const email = config.email.toLowerCase();
   const campusChoice = config.campus || 'Purdue West Lafayette / Indianapolis';
-  let stopped = false;
+  let stopped = !ready;
   let pausedUntil = Number(config.manual_pause_until) || 0;
   let busy = false;
   const done = new Set();

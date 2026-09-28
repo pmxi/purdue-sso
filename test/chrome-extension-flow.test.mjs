@@ -13,11 +13,12 @@ function element(text, onClick = () => {}) {
   };
 }
 
-async function contentPage({ hostname, pathname, body, campus, manualPause = 0, rows = [], controls = [], brand = false }) {
+async function contentPage({ hostname, pathname, body, campus, enabled = true, manualPause = 0, rows = [], controls = [], brand = false }) {
   const changes = [];
+  const messages = [];
   const session = new Map();
   const page = vm.createContext({
-    URL, console, Date, setTimeout: () => 1, clearTimeout() {},
+    URL, console, Date, setTimeout(callback) { callback(); return 1; }, clearTimeout() {},
     setInterval: () => 1, clearInterval() {},
     location: { protocol: 'https:', hostname, pathname, reload() {} },
     sessionStorage: {
@@ -28,7 +29,8 @@ async function contentPage({ hostname, pathname, body, campus, manualPause = 0, 
       body: { innerText: body },
       querySelector: () => brand ? element('Purdue University') : null,
       querySelectorAll(selector) {
-        if (selector === 'button, a, [role="button"]') return controls;
+        if (selector === 'button, a, [role="button"]'
+          || selector === 'button, a, input[type="submit"], [role="button"]') return controls;
         if (selector === 'button, a, [role="button"], [data-test-id], .table') return rows;
         return [];
       },
@@ -36,14 +38,24 @@ async function contentPage({ hostname, pathname, body, campus, manualPause = 0, 
     chrome: {
       storage: {
         local: { async get() { return { username: 'test', password: 'dummy', totp_uri: uri,
-          enabled: true, campus, manual_pause_until: manualPause }; } },
+          enabled, campus, manual_pause_until: manualPause }; } },
         onChanged: { addListener(listener) { changes.push(listener); } },
       },
-      runtime: { onMessage: { addListener() {} } },
+      runtime: { onMessage: { addListener(listener) { messages.push(listener); } } },
     },
   });
   await vm.runInContext(content, page);
-  return { changes };
+  return { changes, messages };
+}
+
+{
+  const clicked = [];
+  const controls = [element('Log Out', () => clicked.push('logout'))];
+  const { messages } = await contentPage({ hostname: 'purdue.brightspace.com',
+    pathname: '/d2l/home/6824', body: 'Brightspace home', enabled: false, controls });
+  const result = await new Promise(resolve => messages[0]('sign-out-brightspace', null, resolve));
+  assert.equal(result, true);
+  assert.deepEqual(clicked, ['logout'], 'Explicit sign-out works when automatic sign-in is disabled');
 }
 
 {

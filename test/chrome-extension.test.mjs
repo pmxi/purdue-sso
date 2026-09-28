@@ -6,10 +6,12 @@ import { generateTotp } from './reference-totp.mjs';
 
 const root = new URL('../', import.meta.url);
 const manifest = JSON.parse(await readFile(new URL('chrome-extension/manifest.json', root), 'utf8'));
+const packageJson = JSON.parse(await readFile(new URL('package.json', root), 'utf8'));
 const content = await readFile(new URL('chrome-extension/content.js', root), 'utf8');
 const optionsSource = await readFile(new URL('chrome-extension/options.js', root), 'utf8');
 
 assert.equal(manifest.manifest_version, 3);
+assert.equal(manifest.version, packageJson.version, 'Keep extension and package versions aligned');
 assert.deepEqual(manifest.permissions, ['storage', 'activeTab']);
 assert.deepEqual(manifest.content_scripts[0].matches, [
   'https://sso.purdue.edu/*',
