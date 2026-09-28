@@ -131,8 +131,7 @@
     if (!microsoft || !/pick an account/i.test(text)) return false;
     const branded = /purdue university/i.test(text)
       || !!document.querySelector('img[alt*="Purdue" i], [aria-label*="Purdue" i]');
-    return branded || location.pathname.toLowerCase().includes(tenant)
-      || Date.now() - Number(sessionStorage.getItem(prefix + 'context') || 0) < 300_000;
+    return branded || location.pathname.toLowerCase().includes(tenant);
   }
 
   function savedAccountTile() {

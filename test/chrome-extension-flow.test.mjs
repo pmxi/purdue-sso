@@ -15,13 +15,14 @@ function element(text, onClick = () => {}) {
 }
 
 async function contentPage({ hostname, pathname, body, campus, manualPause = 0,
-  rows = [], controls = [], blocks = [], navigation = [], brand = false }) {
+  rows = [], controls = [], blocks = [], navigation = [], brand = false, recentPurdueContext = false }) {
   const changes = [];
   const page = vm.createContext({
     URL, console, Date, setTimeout: () => 1, clearTimeout() {}, setInterval: () => 1, clearInterval() {},
     location: { protocol: 'https:', hostname, pathname, href: `https://${hostname}${pathname}`,
       assign(url) { navigation.push(url); }, reload() {} },
-    sessionStorage: { getItem: () => null, setItem() {} },
+    sessionStorage: { getItem: key => recentPurdueContext && key === 'purdue-autologin:context'
+      ? String(Date.now()) : null, setItem() {} },
     getComputedStyle: () => ({ visibility: 'visible' }),
     document: {
       body: { innerText: body },
@@ -106,8 +107,8 @@ async function contentPage({ hostname, pathname, body, campus, manualPause = 0,
   assert.deepEqual(clicked, ['saved'], 'Choose only the saved account on a Purdue picker');
   clicked.length = 0;
   await contentPage({ hostname: 'login.microsoftonline.com', pathname: '/common/login',
-    body: 'Pick an account', rows });
-  assert.deepEqual(clicked, [], 'Leave a generic Microsoft or Outlook picker alone');
+    body: 'Pick an account', rows, recentPurdueContext: true });
+  assert.deepEqual(clicked, [], 'Leave a generic Outlook picker alone even after Purdue sign-in in the same tab');
 }
 
 {

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name Purdue automatic sign-in
 // @namespace https://github.com/pmxi/purdue-sso
-// @version 1.0.11
+// @version 1.0.12
 // @description Sign in to Purdue with your saved password and authenticator code.
 // @match https://sso.purdue.edu/*
 // @match https://idp.purdue.edu/*
@@ -153,8 +153,7 @@
     if (!microsoft || !/pick an account/i.test(text)) return false;
     const branded = /purdue university/i.test(text)
       || !!document.querySelector('img[alt*="Purdue" i], [aria-label*="Purdue" i]');
-    return branded || location.pathname.toLowerCase().includes(tenant)
-      || Date.now() - Number(sessionStorage.getItem(prefix + 'context') || 0) < 300_000;
+    return branded || location.pathname.toLowerCase().includes(tenant);
   }
 
   function savedAccountTile() {
