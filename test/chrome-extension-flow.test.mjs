@@ -14,7 +14,7 @@ function element(text, onClick = () => {}) {
 }
 
 async function contentPage({ hostname, pathname, body, campus, enabled = true, manualPause = 0,
-  rows = [], controls = [], blocks = [], storedLinks = [], navigation = [], brand = false }) {
+  rows = [], controls = [], blocks = [], navigation = [], brand = false }) {
   const changes = [];
   const messages = [];
   const session = new Map();
@@ -30,7 +30,19 @@ async function contentPage({ hostname, pathname, body, campus, enabled = true, m
     document: {
       body: { innerText: body },
       querySelector: () => brand ? element('Purdue University') : null,
-      createElement: () => ({ content: { querySelectorAll: () => storedLinks }, set innerHTML(_value) {} }),
+      createElement: () => {
+        let links = [];
+        return {
+          content: { querySelectorAll: () => links },
+          set innerHTML(markup) {
+            links = Array.from(markup.matchAll(/<a\b[^>]*href="([^"]+)"[^>]*>([^<]+)<\/a>/gi), ([, href, label]) => {
+              const link = element(label.replace('&#160;', '\u00a0'));
+              link.getAttribute = () => href.replaceAll('&amp;', '&');
+              return link;
+            });
+          },
+        };
+      },
       querySelectorAll(selector) {
         if (selector === 'd2l-html-block[html]') return blocks;
         if (selector === 'button, a, [role="button"]'
@@ -63,15 +75,24 @@ async function contentPage({ hostname, pathname, body, campus, enabled = true, m
 
 {
   const navigation = [];
-  const link = element(' Purdue West Lafayette / Indianapolis');
-  link.getAttribute = () => '/d2l/lp/auth/saml/initiate-login?entityId=https://idp.purdue.edu/idp/shibboleth';
-  const block = { shadowRoot: null, getAttribute: () => '<a>campus</a>' };
+  const html = '<a rel="noopener" style="display: block" href="https://purdue.brightspace.com/d2l/lp/auth/saml/initiate-login?entityId=https://idp.purdue.edu/idp/shibboleth&amp;target=%2fd2l%2fhome%2f1643449" title="Purdue West Lafayette Login">&#160;Purdue West Lafayette / Indianapolis</a>';
+  const block = { shadowRoot: null, getAttribute: () => html };
   await contentPage({ hostname: 'purdue.brightspace.com', pathname: '/d2l/login',
     body: 'Please choose your campus', campus: 'Purdue West Lafayette / Indianapolis',
-    blocks: [block], storedLinks: [link], navigation });
+    blocks: [block], navigation });
   assert.deepEqual(navigation, [
-    'https://purdue.brightspace.com/d2l/lp/auth/saml/initiate-login?entityId=https://idp.purdue.edu/idp/shibboleth',
+    'https://purdue.brightspace.com/d2l/lp/auth/saml/initiate-login?entityId=https://idp.purdue.edu/idp/shibboleth&target=%2fd2l%2fhome%2f1643449',
   ], 'Use the campus URL stored on the component when its shadow root is closed');
+}
+
+{
+  const navigation = [];
+  const html = '<a href="https://example.com/collect">&#160;Purdue West Lafayette / Indianapolis</a>';
+  const block = { shadowRoot: null, getAttribute: () => html };
+  await contentPage({ hostname: 'purdue.brightspace.com', pathname: '/d2l/login',
+    body: 'Please choose your campus', campus: 'Purdue West Lafayette / Indianapolis',
+    blocks: [block], navigation });
+  assert.deepEqual(navigation, [], 'Never follow an unrelated stored campus URL');
 }
 
 {

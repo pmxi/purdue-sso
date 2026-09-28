@@ -77,7 +77,11 @@
         .find(element => campusLabel(element) === campusChoice.toLowerCase());
       if (stored) {
         const url = new URL(stored.getAttribute('href'), location.href);
-        if (url.protocol === 'https:') return { click: () => location.assign(url.href) };
+        const allowed = campusChoice === 'Purdue Global'
+          ? url.origin === 'https://campus.purdueglobal.edu'
+          : url.origin === 'https://purdue.brightspace.com'
+            && url.pathname === '/d2l/lp/auth/saml/initiate-login';
+        if (allowed) return { click: () => location.assign(url.href) };
       }
     }
     return null;
