@@ -48,7 +48,7 @@ async function runContent(enabled) {
     getComputedStyle: () => ({ visibility: 'visible' }),
     setInterval: () => 1,
     clearInterval() {}, clearTimeout() {}, setTimeout: () => 1,
-    document: { body: { innerText: 'Sign in Next' }, querySelectorAll(selector) {
+    document: { body: { innerText: 'Sign in Next' }, querySelector: () => null, querySelectorAll(selector) {
       if (selector.startsWith('#displayName')) return [];
       if (selector.startsWith('input[name="loginfmt"]')) return [username];
       if (selector.startsWith('button, a,')) return [next];

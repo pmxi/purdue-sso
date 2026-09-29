@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name Purdue automatic sign-in
 // @namespace https://github.com/pmxi/purdue-sso
-// @version 1.0.12
+// @version 1.0.13
 // @description Sign in to Purdue with your saved password and authenticator code.
 // @match https://sso.purdue.edu/*
 // @match https://idp.purdue.edu/*
@@ -140,7 +140,11 @@
   }
   function purdueContext() {
     if (!microsoft) return true;
-    const accounts = identity();
+    const text = document.body?.innerText || '';
+    const branded = /purdue university/i.test(text)
+      || !!document.querySelector('img[alt*="Purdue" i], [aria-label*="Purdue" i]');
+    const visibleAccounts = branded ? (text.match(/[\w.+-]+@[\w.-]+\.[a-z]{2,}/gi) || []) : [];
+    const accounts = [...identity(), ...visibleAccounts.map(account => account.toLowerCase())];
     if (accounts.some(account => account !== email && account !== config.username.toLowerCase())) return false;
     if (accounts.includes(email) || location.pathname.split('/')[1].toLowerCase() === tenant) {
       sessionStorage.setItem(prefix + 'context', String(Date.now()));
@@ -249,7 +253,7 @@
       // Prefer the code form once it is open, and keep each navigation one-shot.
       const useCode = control(/^use a verification code$/i);
       if (!otp && useCode) { click('use-code', useCode); return; }
-      const usePassword = control(/^(use (?:your|a) password|sign in with (?:your|a) password)$/i);
+      const usePassword = control(/^(?:use (?:your|a) password(?: instead)?|sign in with (?:your|a) password)$/i);
       if (!password && !otp && usePassword) { click('use-password', usePassword); return; }
       const otherMethod = control(/^(?:I can.t use my .+ right now|sign in another way|use a different verification option)$/i);
       if (!otp && !password && otherMethod) { click('other-method', otherMethod); return; }

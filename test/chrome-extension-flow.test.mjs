@@ -112,6 +112,26 @@ async function contentPage({ hostname, pathname, body, campus, manualPause = 0,
 }
 
 {
+  const clicked = [];
+  const controls = [element('Use your password instead', () => clicked.push('password'))];
+  await contentPage({ hostname: 'login.microsoftonline.com',
+    pathname: '/organizations/oauth2/v2.0/authorize',
+    body: 'Purdue University\ntest@purdue.edu\nUse your password instead',
+    brand: true, controls });
+  assert.deepEqual(clicked, ['password'], 'Continue a branded Purdue Outlook sign-in for the saved account');
+  clicked.length = 0;
+  await contentPage({ hostname: 'login.microsoftonline.com',
+    pathname: '/organizations/oauth2/v2.0/authorize',
+    body: 'Purdue University\nother@purdue.edu\nUse your password instead',
+    brand: true, controls });
+  assert.deepEqual(clicked, [], 'Leave another Purdue account manual');
+  await contentPage({ hostname: 'login.microsoftonline.com',
+    pathname: '/organizations/oauth2/v2.0/authorize',
+    body: 'test@purdue.edu\nUse your password instead', controls });
+  assert.deepEqual(clicked, [], 'Do not use an unbranded Outlook prompt as Purdue context');
+}
+
+{
   const listeners = {};
   const store = { manual_pause_until: 0, enabled: true, username: 'test', password: 'dummy', totp_uri: uri };
   const nodes = Object.fromEntries(['pause', 'resume', 'pause-length', 'settings', 'retry', 'pause-state', 'status']

@@ -24,7 +24,7 @@ const context = vm.createContext({
   location: { protocol: 'https:', hostname: 'login.microsoftonline.com', pathname: '/common/login' },
   GM_getValue: (_, fallback) => fallback, GM_registerMenuCommand() {},
   sessionStorage: { getItem: key => session.get(key), setItem: (key, value) => session.set(key, value) },
-  document: { querySelectorAll: selector => selector.startsWith('#displayName')
+  document: { querySelector: () => null, querySelectorAll: selector => selector.startsWith('#displayName')
     ? identities.map(value => ({ value })) : [] },
 });
 vm.runInContext(source, context);
@@ -162,6 +162,7 @@ function recoveryPage() {
     getComputedStyle: () => ({ visibility: 'visible' }),
     document: {
       body: { innerText: 'Verify your identity Enter a verification code' },
+      querySelector: () => null,
       querySelectorAll(selector) {
         if (selector.startsWith('#displayName')) return [{ value: state.account }];
         if (selector.startsWith('#passwordError')) return state.errors;
