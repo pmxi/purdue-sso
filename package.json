@@ -4,9 +4,11 @@
   "private": true,
   "type": "module",
   "description": "Purdue automatic sign-in extension for Chrome and Firefox",
+  "license": "MIT",
   "scripts": {
     "test": "node --test test/*.test.mjs",
-    "check": "node --check extension/content.js && node --check extension/totp.js && node --check extension/options.js && node --check extension/popup.js && node --check scripts/build-extension.mjs",
+    "check": "node --check extension/content.js && node --check extension/totp.js && node --check extension/options.js && node --check extension/popup.js && node --check scripts/build-extension.mjs && node --check scripts/render-icons.mjs",
+    "icons": "node scripts/render-icons.mjs",
     "build": "node scripts/build-extension.mjs",
     "build:chrome": "node scripts/build-extension.mjs chrome",
     "build:firefox": "node scripts/build-extension.mjs firefox"

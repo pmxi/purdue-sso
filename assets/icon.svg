@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <title>Purdue automatic sign-in</title>
+  <desc>A gold arrow entering a doorway on a charcoal rounded square.</desc>
+  <rect x="4" y="4" width="120" height="120" rx="28" fill="#191919"/>
+  <g fill="none" stroke="#CFB991" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M80 28H104V100H80"/>
+    <path d="M24 64H76M58 46L76 64L58 82"/>
+  </g>
+</svg>

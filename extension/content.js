@@ -2,10 +2,10 @@
   'use strict';
   const extensionApi = globalThis.browser ?? globalThis.chrome;
   const { generateTotp } = globalThis.PurdueTotp;
-  const config = await extensionApi.storage.local.get(['username', 'password', 'totp_uri', 'enabled', 'campus', 'manual_pause_until']);
+  const config = await extensionApi.storage.local.get(['username', 'password', 'totp_uri', 'enabled', 'campus']);
   config.username = (config.username || '').trim().replace(/@purdue\.edu$/i, '');
   config.email = config.username + '@purdue.edu';
-  const ready = config.enabled === true && config.username && config.password && config.totp_uri;
+  const ready = config.username && config.password && config.totp_uri;
   const tenant = '4130bd39-7c53-419c-b1e5-8758d6d63f21';
   const microsoft = location.hostname === 'login.microsoftonline.com';
   const brightspace = location.hostname === 'purdue.brightspace.com';
@@ -17,34 +17,24 @@
   const email = config.email.toLowerCase();
   const campusChoice = config.campus || 'Purdue West Lafayette / Indianapolis';
   let stopped = !ready;
-  let pausedUntil = Number(config.manual_pause_until) || 0;
+  let enabled = config.enabled === true;
   let busy = false;
   const done = new Set();
   let started = Date.now();
   let timer;
-  let resumeTimer;
   extensionApi.storage.onChanged.addListener((changes, area) => {
     if (area !== 'local') return;
     // Open pages must never keep using credentials after settings are changed
     // or cleared. Reloading starts a new run with the latest saved settings.
-    if (['username', 'password', 'totp_uri', 'enabled', 'campus'].some(key =>
+    if (['username', 'password', 'totp_uri', 'campus'].some(key =>
       changes[key] && changes[key].oldValue !== changes[key].newValue)) {
       stopped = true;
       clearInterval(timer);
-      clearTimeout(resumeTimer);
       return;
     }
-    if (!changes.manual_pause_until) return;
-    pausedUntil = Number(changes.manual_pause_until.newValue) || 0;
-    scheduleTicks();
-  });
-  extensionApi.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-    if (message === 'retry-sign-in') {
-      for (const key of Object.keys(sessionStorage)) {
-        if (key.startsWith(prefix)) sessionStorage.removeItem(key);
-      }
-      sendResponse({ ok: true });
-      location.reload();
+    if (changes.enabled && changes.enabled.oldValue !== changes.enabled.newValue) {
+      enabled = changes.enabled.newValue === true;
+      scheduleTicks();
     }
   });
 
@@ -112,9 +102,6 @@
   function click(step, element) {
     if (element && claim(step)) element.click();
   }
-  function manualPaused(now = Date.now()) {
-    return pausedUntil === -1 || pausedUntil > now;
-  }
   function identity() {
     const candidates = Array.from(document.querySelectorAll(
       '#displayName, #signInName, #userDisplayName, input[name="login"], input[name="loginfmt"]',
@@ -160,7 +147,7 @@
 
   async function tick() {
     const now = Date.now();
-    if (busy || stopped || manualPaused(now)) return;
+    if (busy || stopped || !enabled) return;
     if (now - started > 180_000) return;
     busy = true;
     try {
@@ -223,7 +210,7 @@
         // Wait for a fresh code when the current one is about to expire.
         if (period - (Date.now() / 1000 % period) < 5) return;
         const code = await generateTotp(config.totp_uri);
-        if (!stopped && !manualPaused() && visible(otp) && visible(submit)
+        if (!stopped && enabled && visible(otp) && visible(submit)
           && purdueContext() && fill(otp, code)) click('otp', submit);
         return;
       }
@@ -234,20 +221,14 @@
       }
     } catch {
       stopped = true;
-      console.info('Purdue automatic sign-in paused. Check the form and configuration, then use Retry on this tab in the extension popup.');
+      console.info('Purdue automatic sign-in stopped. Check your settings and reload the sign-in page.');
     } finally {
       busy = false;
     }
   }
   function scheduleTicks() {
     clearInterval(timer);
-    clearTimeout(resumeTimer);
-    if (stopped || pausedUntil === -1) return;
-    if (pausedUntil > Date.now()) {
-      resumeTimer = setTimeout(() => { pausedUntil = 0; scheduleTicks(); }, pausedUntil - Date.now());
-      return;
-    }
-    if (pausedUntil !== -1 && pausedUntil <= Date.now()) pausedUntil = 0;
+    if (stopped || !enabled) return;
     started = Date.now();
     void tick();
     timer = setInterval(() => {

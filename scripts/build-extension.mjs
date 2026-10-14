@@ -18,17 +18,22 @@ for (const target of new Set(targets)) {
     manifest.browser_specific_settings = {
       gecko: {
         id: 'purdue-sso@pmxi.github.io',
-        strict_min_version: '140.0',
+        strict_min_version: '142.0',
         // Automatic submission sends credentials to Purdue/Microsoft forms.
         data_collection_permissions: { required: ['authenticationInfo'] },
       },
-      gecko_android: { strict_min_version: '142.0' },
     };
   }
   await rm(destination, { recursive: true, force: true });
   await mkdir(destination, { recursive: true });
+  await cp(new URL('LICENSE', root), new URL('LICENSE', destination));
   // Explicit allowlist keeps local files and development tools out of packages.
   for (const name of ['content.js', 'totp.js', 'options.js', 'options.html', 'popup.js', 'popup.html']) {
+    await cp(new URL(`extension/${name}`, root), new URL(name, destination));
+  }
+  await mkdir(new URL('icons/', destination));
+  const icons = new Set([...Object.values(manifest.icons), ...Object.values(manifest.action.default_icon)]);
+  for (const name of icons) {
     await cp(new URL(`extension/${name}`, root), new URL(name, destination));
   }
   await writeFile(new URL('manifest.json', destination), JSON.stringify(manifest, null, 2) + '\n');

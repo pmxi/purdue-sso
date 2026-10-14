@@ -3,8 +3,26 @@
   "name": "Purdue automatic sign-in",
   "version": "1.1.0",
   "description": "Fill Purdue sign-in locally using your saved account and authenticator enrollment.",
-  "permissions": ["storage", "activeTab"],
-  "action": { "default_popup": "popup.html", "default_title": "Purdue automatic sign-in" },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "64": "icons/icon-64.png",
+    "96": "icons/icon-96.png",
+    "128": "icons/icon-128.png"
+  },
+  "permissions": ["storage"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Purdue automatic sign-in",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "24": "icons/icon-24.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "64": "icons/icon-64.png"
+    }
+  },
   "options_page": "options.html",
   "content_scripts": [{
     "matches": [

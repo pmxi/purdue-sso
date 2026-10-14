@@ -4,11 +4,9 @@ import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
 
 for (const apiName of ['chrome', 'browser']) {
-  test(`Campus, account, pause and retry flows (${apiName} API)`, async () => {
+  test(`Campus, account and enable/disable flows (${apiName} API)`, async () => {
     const totpSource = await readFile(new URL('../extension/totp.js', import.meta.url), 'utf8');
     const content = totpSource + '\n' + await readFile(new URL('../extension/content.js', import.meta.url), 'utf8');
-    const popup = await readFile(new URL('../extension/popup.js', import.meta.url), 'utf8');
-    const popupHtml = await readFile(new URL('../extension/popup.html', import.meta.url), 'utf8');
     const uri = 'otpauth://totp/Test?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ';
 
     function element(text, onClick = () => {}) {
@@ -18,15 +16,15 @@ for (const apiName of ['chrome', 'browser']) {
       };
     }
 
-    async function contentPage({ hostname, pathname, body, campus, manualPause = 0,
+    async function contentPage({ hostname, pathname, body, campus, enabled = true,
       rows = [], controls = [], blocks = [], navigation = [], brand = false, recentPurdueContext = false,
-      session = {}, reload = () => {} }) {
+      session = {} }) {
       const changes = [];
-      const messages = [];
+      let interval;
       const page = vm.createContext({
-        URL, console, Date, setTimeout: () => 1, clearTimeout() {}, setInterval: () => 1, clearInterval() {},
+        URL, console, Date, setInterval: callback => { interval = callback; return 1; }, clearInterval() { interval = undefined; },
         location: { protocol: 'https:', hostname, pathname, href: `https://${hostname}${pathname}`,
-          assign(url) { navigation.push(url); }, reload },
+          assign(url) { navigation.push(url); } },
         sessionStorage: Object.assign(session, {
           getItem: key => recentPurdueContext && key === 'purdue-autologin:context'
             ? String(Date.now()) : session[key] ?? null,
@@ -57,15 +55,16 @@ for (const apiName of ['chrome', 'browser']) {
         },
         [apiName]: {
           storage: {
-            local: { async get() { return { username: 'test', password: 'dummy', totp_uri: uri,
-              enabled: true, campus, manual_pause_until: manualPause }; } },
+            local: { async get(keys) {
+              const saved = { username: 'test', password: 'dummy', totp_uri: uri, enabled, campus };
+              return Object.fromEntries(keys.filter(key => key in saved).map(key => [key, saved[key]]));
+            } },
             onChanged: { addListener(listener) { changes.push(listener); } },
           },
-          runtime: { onMessage: { addListener(listener) { messages.push(listener); } } },
         },
       });
       await vm.runInContext(content, page);
-      return { changes, messages };
+      return { changes, poll: () => interval?.() };
     }
 
     {
@@ -97,43 +96,43 @@ for (const apiName of ['chrome', 'browser']) {
       const clicked = [];
       const controls = [element('Purdue West Lafayette / Indianapolis', () => clicked.push('west'))];
       const { changes } = await contentPage({ hostname: 'purdue.brightspace.com', pathname: '/d2l/login',
-        body: 'Please choose your campus', campus: 'Purdue West Lafayette / Indianapolis',
-        manualPause: -1, controls });
-      assert.deepEqual(clicked, [], 'Manual pause stops campus selection');
-      changes[0]({ manual_pause_until: { newValue: 0 } }, 'local');
+        body: 'Please choose your campus', enabled: false, controls });
+      assert.deepEqual(clicked, [], 'Disabled means no campus selection');
+      changes[0]({ enabled: { oldValue: false, newValue: true } }, 'local');
       await new Promise(resolve => setImmediate(resolve));
-      assert.deepEqual(clicked, ['west'], 'Resuming starts sign-in on the current page');
+      assert.deepEqual(clicked, ['west'], 'Enabling starts sign-in in the current page without a reload');
+      changes[0]({ enabled: { oldValue: true, newValue: false } }, 'local');
+      changes[0]({ enabled: { oldValue: false, newValue: true } }, 'local');
+      await new Promise(resolve => setImmediate(resolve));
+      assert.deepEqual(clicked, ['west'], 'Toggling preserves duplicate-submission guards');
     }
 
     {
-      // Settings can be disabled or cleared while the current tab is paused.
-      for (const key of ['enabled', 'username', 'password', 'totp_uri', 'campus']) {
+      const clicked = [];
+      const controls = [];
+      const { changes, poll } = await contentPage({ hostname: 'purdue.brightspace.com', pathname: '/d2l/login',
+        body: 'Please choose your campus', controls });
+      changes[0]({ enabled: { oldValue: true, newValue: false } }, 'local');
+      controls.push(element('Purdue West Lafayette / Indianapolis', () => clicked.push('west')));
+      poll();
+      await new Promise(resolve => setImmediate(resolve));
+      assert.deepEqual(clicked, [], 'Disabling stops an already running page');
+      changes[0]({ enabled: { oldValue: false, newValue: true } }, 'local');
+      await new Promise(resolve => setImmediate(resolve));
+      assert.deepEqual(clicked, ['west']);
+    }
+
+    {
+      for (const key of ['username', 'password', 'totp_uri', 'campus']) {
         const clicked = [];
         const controls = [element('Purdue West Lafayette / Indianapolis', () => clicked.push('west'))];
         const { changes } = await contentPage({ hostname: 'purdue.brightspace.com', pathname: '/d2l/login',
-          body: 'Please choose your campus', manualPause: -1, controls });
+          body: 'Please choose your campus', enabled: false, controls });
         changes[0]({ [key]: { oldValue: 'configured', newValue: undefined } }, 'local');
-        changes[0]({ manual_pause_until: { newValue: 0 } }, 'local');
+        changes[0]({ enabled: { oldValue: false, newValue: true } }, 'local');
         await new Promise(resolve => setImmediate(resolve));
-        assert.deepEqual(clicked, [], `Changing ${key} stops the existing content script`);
+        assert.deepEqual(clicked, [], `Changing ${key} prevents use of stale settings after enabling`);
       }
-    }
-
-    {
-      const actions = [];
-      const session = { 'purdue-autologin:password': '123', 'purdue-autologin:context': '456', unrelated: 'keep' };
-      const { messages } = await contentPage({ hostname: 'purdue.brightspace.com', pathname: '/d2l/login',
-        body: '', manualPause: -1, session, reload: () => actions.push('reload') });
-      messages[0]('unrelated-message', {}, () => actions.push('unexpected'));
-      assert.deepEqual(actions, []);
-      messages[0]('retry-sign-in', {}, response => {
-        assert.equal(response.ok, true);
-        actions.push('response');
-      });
-      assert.deepEqual(actions, ['response', 'reload'], 'Acknowledge retry before navigating away');
-      assert.equal(session['purdue-autologin:password'], undefined);
-      assert.equal(session['purdue-autologin:context'], undefined);
-      assert.equal(session.unrelated, 'keep', 'Retry preserves other website session data');
     }
 
     {
@@ -167,37 +166,6 @@ for (const apiName of ['chrome', 'browser']) {
         pathname: '/organizations/oauth2/v2.0/authorize',
         body: 'test@purdue.edu\nUse your password instead', controls });
       assert.deepEqual(clicked, [], 'Do not use an unbranded Outlook prompt as Purdue context');
-    }
-
-    {
-      const listeners = {};
-      const store = { manual_pause_until: 0, enabled: true, username: 'test', password: 'dummy', totp_uri: uri };
-      const nodes = Object.fromEntries(['pause', 'resume', 'pause-length', 'settings', 'retry', 'pause-state', 'status']
-        .map(id => [id, { hidden: id === 'resume', textContent: '', value: '15',
-          addEventListener(_type, handler) { listeners[id] = handler; } }]));
-      const page = vm.createContext({
-        Date: class extends Date { static now() { return 1_000_000; } },
-        document: { querySelector: selector => nodes[selector.slice(1)] },
-        [apiName]: {
-          storage: { local: {
-            async get() { return { ...store }; },
-            async set(value) { Object.assign(store, value); },
-            async remove(key) { delete store[key]; },
-          }, onChanged: { addListener() {} } },
-          runtime: { openOptionsPage() {} },
-          tabs: { async query() { return []; } },
-        },
-      });
-      await vm.runInContext(popup, page);
-      assert.doesNotMatch(popupHtml, /id="(?:switch|signout|manual-signout)"/);
-      await listeners.pause();
-      assert.equal(store.manual_pause_until, 1_900_000);
-      assert.equal(nodes.resume.hidden, false);
-      await listeners.resume();
-      assert.equal(store.manual_pause_until, undefined);
-      nodes['pause-length'].value = 'until-resumed';
-      await listeners.pause();
-      assert.equal(store.manual_pause_until, -1);
     }
 
   });

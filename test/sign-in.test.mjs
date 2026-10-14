@@ -14,8 +14,10 @@ for (const apiName of ['chrome', 'browser']) {
       + '  globalThis.testApi = { generateTotp, purdueContext, claim, fill, tick, visible, purdueAccountPicker, savedAccountTile }; return;\n})();';
     source = await readFile(new URL('../extension/totp.js', import.meta.url), 'utf8') + '\n' + source;
     const extensionApi = {
-      storage: { local: { async get() { return { ...config, enabled: true }; } }, onChanged: { addListener() {} } },
-      runtime: { onMessage: { addListener() {} } },
+      storage: { local: { async get(keys) {
+        const saved = { ...config, enabled: true };
+        return Object.fromEntries(keys.filter(key => key in saved).map(key => [key, saved[key]]));
+      } }, onChanged: { addListener() {} } },
     };
     let identities = [];
     const session = new Map();

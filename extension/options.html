@@ -3,6 +3,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Purdue automatic sign-in settings</title>
+<link rel="icon" type="image/png" href="icons/icon-32.png">
 <style>
   body { box-sizing: border-box; max-width: 42rem; margin: 2rem auto; padding: 0 1rem; font: 1rem/1.5 system-ui, sans-serif; color: #222; }
   h1 { font-size: 1.5rem; }
@@ -11,6 +12,11 @@
   input[type="checkbox"] { margin-right: .5rem; }
   button { padding: .55rem .85rem; font: inherit; }
   .actions { display: flex; gap: .75rem; }
+  .verification { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; margin: 1rem 0; }
+  #current-code { font: 600 1.5rem/1.5 ui-monospace, monospace; font-variant-numeric: tabular-nums; letter-spacing: .08em; }
+  #code-timer { display: inline-flex; align-items: center; gap: .4rem; color: #555; font-size: .85rem; font-variant-numeric: tabular-nums; }
+  #code-progress { width: 3rem; height: .4rem; accent-color: #15803d; }
+  [hidden] { display: none !important; }
   #status { min-height: 1.5em; }
 </style>
 <h1>Purdue automatic sign-in</h1>
@@ -19,8 +25,8 @@
 <ol>
   <li>After updating the extension files, reload it in <code>chrome://extensions</code> (Chrome) or <code>about:debugging#/runtime/this-firefox</code> (Firefox). Reload any open sign-in tabs too.</li>
   <li>At <a href="https://mysignins.microsoft.com/security-info" target="_blank" rel="noopener noreferrer">Microsoft Security info</a>, sign in with your existing method. Choose <strong>+ Add sign-in method → Microsoft Authenticator → I want to use a different authenticator app → Can’t scan QR Code?</strong> <a href="https://service.purdue.edu/TDClient/32/Purdue/KB/Article/2219/How-To-Set-Up-Authentication-Codes-with-Yubikeys-for-Microsoft-MFA" target="_blank" rel="noopener noreferrer">Purdue’s guide</a> shows this path. A URL beginning <code>mobileappcommunicator.auth.microsoft.com/activatev2</code> means you are in Microsoft Authenticator setup; go back and choose the different-app link.</li>
-  <li>Copy the <strong>Secret key</strong> into the field below. Enter your career account and password, choose your campus, enable automatic sign-in, then save. Use the displayed current code to verify the new method on Microsoft’s page. Keep your old method until verification succeeds.</li>
-  <li>Start sign-in from <a href="https://purdue.brightspace.com" target="_blank" rel="noopener noreferrer">Purdue Brightspace</a> or another Purdue service. To use another account, open the extension popup and pause automatic sign-in for 15 minutes, 30 minutes, one hour, or until you resume. Then use the website's own account controls. Resume automatic sign-in from the popup when ready.</li>
+  <li>Copy the <strong>Secret key</strong> into the field below. Enter your career account and password, choose your campus, and enable automatic sign-in. Valid changes save automatically. Use the current code to verify the new method on Microsoft’s page; the code refreshes automatically. Keep your old method until verification succeeds.</li>
+  <li>Start sign-in from <a href="https://purdue.brightspace.com" target="_blank" rel="noopener noreferrer">Purdue Brightspace</a> or another Purdue service. Use the button in the extension popup to enable or disable automatic sign-in. Green means enabled; gray means disabled. When disabled, use the website’s own account controls to choose another account.</li>
 </ol>
 <p>The extension fills sign-in forms and selects your configured campus and account. It does not sign you out or clear browser data. If a stale sign-in session causes trouble, use your browser's site-data controls for the affected Purdue, Brightspace, and Microsoft sites.</p>
 <form id="settings" autocomplete="off">
@@ -34,7 +40,14 @@
     <input id="totp_uri" name="totp_uri" type="password" required autocomplete="off" placeholder="Base32 key from Purdue, or otpauth://totp/…">
   </label>
   <p>A current six-digit code is not the setup key. Never share the setup key in chat or a pull request.</p>
-  <p>Current code for setup verification: <strong id="current-code" aria-live="polite"></strong> <button id="refresh-code" type="button">Refresh code</button></p>
+  <div class="verification">
+    <span>Current code for setup verification:</span>
+    <strong id="current-code" aria-live="polite">—</strong>
+    <span id="code-timer" hidden>
+      <progress id="code-progress" max="30" value="30" aria-label="Time until next code"></progress>
+      <span id="code-countdown" role="timer" aria-live="off"></span>
+    </span>
+  </div>
   <label>Campus
     <select id="campus" name="campus">
       <option>Purdue West Lafayette / Indianapolis</option>
@@ -45,8 +58,8 @@
   </label>
   <p>When enabled, the extension enters and submits your saved username, password, and generated codes to Purdue/Microsoft sign-in forms. The authenticator setup key stays in this browser profile.</p>
   <label><input id="enabled" name="enabled" type="checkbox">Enable automatic sign-in</label>
-  <div class="actions"><button type="submit">Save settings</button><button id="clear" type="button">Clear settings</button></div>
-  <p id="status" role="status" aria-live="polite"></p>
+  <p id="status" role="status" aria-live="polite">Changes save automatically.</p>
+  <div class="actions"><button id="clear" type="button">Clear settings</button></div>
 </form>
 <script src="totp.js"></script>
 <script type="module" src="options.js"></script>

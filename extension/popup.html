@@ -2,29 +2,42 @@
 <html lang="en">
 <meta charset="utf-8">
 <title>Purdue automatic sign-in</title>
+<link rel="icon" type="image/png" href="icons/icon-32.png">
 <style>
-  body { min-width: 19rem; margin: 1rem; font: 14px/1.5 system-ui, sans-serif; }
-  button, select { font: inherit; }
-  button { display: block; width: 100%; margin: .5rem 0; padding: .45rem; }
-  select { display: block; width: 100%; margin: .35rem 0; padding: .35rem; }
-  [hidden] { display: none !important; }
-  #status { min-height: 1.5em; }
+  :root { color-scheme: light dark; }
+  body { display: flex; flex-direction: column; gap: 8px; width: 240px; box-sizing: border-box; margin: 0; padding: 12px; font: 14px/1.4 system-ui, sans-serif; background: #fff; }
+  button { border: 0; font: inherit; cursor: pointer; }
+  #toggle { display: flex; align-items: center; gap: 14px; padding: 18px; border-radius: 12px; background: #e5e7eb; color: #374151; text-align: left; }
+  #toggle[data-enabled="true"] { background: #15803d; color: #fff; }
+  #settings { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px; border-radius: 8px; background: transparent; color: #52525b; }
+  #settings:hover { background: #f4f4f5; }
+  #settings svg { width: 20px; height: 20px; }
+  button:hover { filter: brightness(.95); }
+  button:focus-visible { outline: 3px solid #2563eb; outline-offset: 3px; }
+  button:disabled { cursor: wait; }
+  svg { flex: none; width: 26px; height: 26px; }
+  .label { display: block; font-size: 12px; }
+  #state { display: block; font-size: 21px; font-weight: 650; }
+  @media (prefers-color-scheme: dark) {
+    body { background: #18181b; }
+    #toggle { background: #3f3f46; color: #f4f4f5; }
+    #toggle[data-enabled="true"] { background: #15803d; color: #fff; }
+    #settings { color: #d4d4d8; }
+    #settings:hover { background: #27272a; }
+  }
 </style>
-<strong>Purdue automatic sign-in</strong>
-<p id="pause-state" role="status" aria-live="polite"></p>
-<label for="pause-length">Manual sign-in for</label>
-<select id="pause-length">
-  <option value="15">15 minutes</option>
-  <option value="30">30 minutes</option>
-  <option value="60">1 hour</option>
-  <option value="until-resumed">Until I resume</option>
-</select>
-<button id="pause">Pause automatic sign-in</button>
-<button id="resume" hidden>Resume automatic sign-in now</button>
-<p>When paused, use the website's own account controls.</p>
-<hr>
-<button id="settings">Settings</button>
-<button id="retry">Retry on this tab</button>
-<p id="status" role="status" aria-live="polite"></p>
+<button id="toggle" type="button" role="switch" aria-label="Automatic sign-in" aria-checked="false" data-enabled="false" disabled>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+    <path d="M12 3v9M6.3 5.7a9 9 0 1 0 11.4 0"/>
+  </svg>
+  <span><span class="label">Automatic sign-in</span><span id="state">Loading…</span></span>
+</button>
+<button id="settings" type="button" aria-label="Settings" title="Settings">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" aria-hidden="true">
+    <path d="M10 3h4l.6 2.5 1.7 1 2.5-.7 2 3.4L19 11v2l1.8 1.8-2 3.4-2.5-.7-1.7 1L14 21h-4l-.6-2.5-1.7-1-2.5.7-2-3.4L5 13v-2L3.2 9.2l2-3.4 2.5.7 1.7-1Z"/>
+    <circle cx="12" cy="12" r="3"/>
+  </svg>
+  <span>Settings</span>
+</button>
 <script src="popup.js"></script>
 </html>
