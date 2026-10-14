@@ -1,6 +1,6 @@
 # Firefox Add-ons submission
 
-Submission materials for version 1.1.0. These files prepare a submission; they do not indicate Mozilla approval or publication.
+Submission record and materials for version 1.1.0. Submitted to Mozilla on October 14, 2026; publication is pending. Submission does not indicate Mozilla approval.
 
 ## Listing fields
 
@@ -89,6 +89,9 @@ The distribution ZIP contains only built extension files and the MIT license. Th
 
 ## Submission status
 
+- Version 1.1.0 submitted on October 14, 2026. Mozilla displayed **Version Submitted** and will email the publisher when it is published. The completion page says publication may take up to 24 hours, or longer for manual review.
+- [Manage listing](https://addons.mozilla.org/en-US/developers/addon/purdue-automatic-sign-in/edit) · [Version 1.1.0](https://addons.mozilla.org/en-US/developers/addon/purdue-automatic-sign-in/versions/6578260)
+- The distribution and matching source archives were uploaded. Rebuilding the source archive reproduced all 15 distribution files exactly. The uploaded source archive preserves the pre-submission copy of this status section.
 - Distribution ZIP prepared; local Mozilla validation reports no errors or warnings.
 - Publisher account has two-step authentication enabled. The publisher authorized acceptance of Mozilla's distribution agreement and policies on October 14, 2026; they have been accepted.
 - MIT license selected by the publisher on October 14, 2026.
