@@ -1,11 +1,11 @@
-// Generated from purdue-sso.user.js by scripts/build-chrome-extension.mjs.
-// Edit the userscript's shared sign-in logic, then run npm run build:chrome.
 (async () => {
   'use strict';
-  const config = await chrome.storage.local.get(['username', 'password', 'totp_uri', 'enabled', 'campus', 'manual_pause_until']);
-  const ready = config.enabled && config.username && config.password && config.totp_uri;
+  const extensionApi = globalThis.browser ?? globalThis.chrome;
+  const { generateTotp } = globalThis.PurdueTotp;
+  const config = await extensionApi.storage.local.get(['username', 'password', 'totp_uri', 'enabled', 'campus', 'manual_pause_until']);
   config.username = (config.username || '').trim().replace(/@purdue\.edu$/i, '');
   config.email = config.username + '@purdue.edu';
+  const ready = config.enabled === true && config.username && config.password && config.totp_uri;
   const tenant = '4130bd39-7c53-419c-b1e5-8758d6d63f21';
   const microsoft = location.hostname === 'login.microsoftonline.com';
   const brightspace = location.hostname === 'purdue.brightspace.com';
@@ -23,18 +23,28 @@
   let started = Date.now();
   let timer;
   let resumeTimer;
-  chrome.storage.onChanged.addListener((changes, area) => {
-    if (area !== 'local' || !changes.manual_pause_until) return;
+  extensionApi.storage.onChanged.addListener((changes, area) => {
+    if (area !== 'local') return;
+    // Open pages must never keep using credentials after settings are changed
+    // or cleared. Reloading starts a new run with the latest saved settings.
+    if (['username', 'password', 'totp_uri', 'enabled', 'campus'].some(key =>
+      changes[key] && changes[key].oldValue !== changes[key].newValue)) {
+      stopped = true;
+      clearInterval(timer);
+      clearTimeout(resumeTimer);
+      return;
+    }
+    if (!changes.manual_pause_until) return;
     pausedUntil = Number(changes.manual_pause_until.newValue) || 0;
     scheduleTicks();
   });
-  chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  extensionApi.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message === 'retry-sign-in') {
       for (const key of Object.keys(sessionStorage)) {
         if (key.startsWith(prefix)) sessionStorage.removeItem(key);
       }
+      sendResponse({ ok: true });
       location.reload();
-      return;
     }
   });
 
@@ -67,9 +77,8 @@
       if (rendered) return rendered;
       // Brightspace also stores the links as HTML on the component. This works
       // when its rendered links are inside a closed shadow root.
-      const template = document.createElement('template');
-      template.innerHTML = block.getAttribute('html') || '';
-      const stored = Array.from(template.content.querySelectorAll('a'))
+      const parsed = new DOMParser().parseFromString(block.getAttribute('html') || '', 'text/html');
+      const stored = Array.from(parsed.querySelectorAll('a'))
         .find(element => campusLabel(element) === campusChoice.toLowerCase());
       if (stored) {
         const url = new URL(stored.getAttribute('href'), location.href);
@@ -149,45 +158,6 @@
     }).sort((a, b) => a.textContent.length - b.textContent.length)[0];
   }
 
-  function decodeBase32(value) {
-    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
-    const bytes = [];
-    let bits = 0;
-    let buffer = 0;
-    for (const character of value.toUpperCase().replace(/=+$/, '')) {
-      const index = alphabet.indexOf(character);
-      if (index < 0) throw new Error('Invalid authenticator configuration');
-      buffer = (buffer << 5) | index;
-      bits += 5;
-      if (bits >= 8) {
-        bits -= 8;
-        bytes.push((buffer >>> bits) & 255);
-        buffer &= (1 << bits) - 1;
-      }
-    }
-    return new Uint8Array(bytes);
-  }
-  async function generateTotp(uri, now = Date.now()) {
-    const url = new URL(uri);
-    const secret = url.searchParams.get('secret');
-    const period = Number(url.searchParams.get('period') || 30);
-    const digits = Number(url.searchParams.get('digits') || 6);
-    const hash = { SHA1: 'SHA-1', SHA256: 'SHA-256', SHA512: 'SHA-512' }[
-      (url.searchParams.get('algorithm') || 'SHA1').toUpperCase()
-    ];
-    if (url.protocol !== 'otpauth:' || url.hostname !== 'totp' || !secret || !hash
-      || !Number.isInteger(period) || period <= 0 || ![6, 7, 8].includes(digits)) {
-      throw new Error('Invalid authenticator configuration');
-    }
-    const counter = new Uint8Array(8);
-    new DataView(counter.buffer).setBigUint64(0, BigInt(Math.floor(now / 1000 / period)));
-    const key = await crypto.subtle.importKey('raw', decodeBase32(secret), { name: 'HMAC', hash }, false, ['sign']);
-    const digest = new Uint8Array(await crypto.subtle.sign('HMAC', key, counter));
-    const offset = digest[digest.length - 1] & 15;
-    const value = new DataView(digest.buffer).getUint32(offset) & 0x7fffffff;
-    return String(value % 10 ** digits).padStart(digits, '0');
-  }
-
   async function tick() {
     const now = Date.now();
     if (busy || stopped || manualPaused(now)) return;
@@ -264,7 +234,7 @@
       }
     } catch {
       stopped = true;
-      console.info('Purdue automatic sign-in paused. Check the form and configuration, then use the retry menu.');
+      console.info('Purdue automatic sign-in paused. Check the form and configuration, then use Retry on this tab in the extension popup.');
     } finally {
       busy = false;
     }

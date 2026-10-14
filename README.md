@@ -1,75 +1,94 @@
 # Purdue SSO
 
-A Violentmonkey userscript and unpacked Chrome extension that automate Purdue sign-in: username, password, authenticator codes, and the “Stay signed in?” prompt.
+A browser extension for Chrome and Firefox that automates Purdue sign-in: campus and account selection, username, password, authenticator codes, and the “Stay signed in?” prompt. Automatic sign-in is off until you configure and enable it.
 
-## Chrome extension
+## Build and install
 
-1. Download or clone this repository. Keep the `chrome-extension` folder in a stable local location.
-2. Open `chrome://extensions` in Chrome, turn on **Developer mode**, click **Load unpacked**, and select the `chrome-extension` folder.
-3. Open **Purdue automatic sign-in → Details → Extension options**. Follow the setup instructions there, enter your career account, password, and an authenticator setup key or existing `otpauth://totp/…` enrollment URI, choose your campus, enable automatic sign-in, and save.
-4. Start at a Purdue service such as [Brightspace](https://purdue.brightspace.com). The extension selects your campus and saved account, then completes sign-in. If sign-in is interrupted, use **Retry on this tab** from the extension popup.
+Requires Node.js 20 or newer. There are no runtime or build dependencies to install.
 
-The unpacked extension stays installed while the folder remains in place. When updating the repository, click **Reload** on its card in `chrome://extensions`. The extension runs in the Chrome profile where you installed it, and only on its four declared HTTPS sign-in origins. It uses local extension storage, not Chrome Sync. No credentials or authenticator secrets belong in this repository.
+```sh
+npm run build
+```
 
-To get a new setup key for a Purdue account that already has MFA, sign in at [Microsoft Security info](https://mysignins.microsoft.com/security-info) using your existing method. Choose **+ Add sign-in method → Microsoft Authenticator → Set up a different authenticator app → Can’t scan QR Code?** Copy the secret key into the extension options and save. Use the displayed current code to verify the new method in Microsoft Security info. Keep your existing method until the new method works. Purdue documents this flow in its [authentication code setup guide](https://service.purdue.edu/TDClient/32/Purdue/KB/Article/2219/How-To-Set-Up-Authentication-Codes-with-Yubikeys-for-Microsoft-MFA). Never put the key in an issue, PR, or chat.
+This creates `dist/chrome` and `dist/firefox` from the shared `extension` source folder. Keep the generated folders in a stable location. Rebuild after source changes, reload the extension, and reload open sign-in tabs.
 
-The popup pauses automatic sign-in for 15 minutes, 30 minutes, 1 hour, or until you resume it. While paused, use the website's own controls to choose another account. The popup also offers **Retry on this tab** if a sign-in page was interrupted.
+### Chrome
 
-The extension does not sign out, clear cookies, or change browser site data. Brightspace's Log Out control may leave a Purdue SSO session active; use Chrome's site-data controls for the affected Purdue, Brightspace, and Microsoft sites if a stale session prevents sign-in.
+1. Open `chrome://extensions` and enable **Developer mode**.
+2. Choose **Load unpacked** and select `dist/chrome`.
+3. Open the extension popup and choose **Settings**.
 
-## Violentmonkey userscript
+Chrome keeps the unpacked extension installed across restarts. After rebuilding, click **Reload** on its extension card.
 
-1. Install [Violentmonkey](https://violentmonkey.github.io/get-it/).
-2. Open [purdue-sso.user.js](https://raw.githubusercontent.com/pmxi/purdue-sso/main/purdue-sso.user.js) and install it. Alternatively, create a new script in Violentmonkey and paste the file's contents.
-3. Open the installed script in Violentmonkey's editor. Fill in the three empty fields near the top:
+If upgrading from the previous Chrome-only folder, loading the new folder can create a separate installation with separate settings. Have your credentials and authenticator enrollment available privately, remove the old installation, and configure the new one. Do not run both copies together.
 
-   ```js
-   const config = {
-     username: 'your-career-account',
-     password: 'your-password',
-     totp_uri: 'your-existing-otpauth-uri',
-   };
-   ```
+### Firefox
 
-4. Save, then visit your Purdue service and begin its normal login flow.
+Requires Firefox for desktop 140 or newer.
 
-The repository ships with **empty credentials** and does nothing until configured. Edit only the installed browser copy. Do not commit your configured copy or share an extension export containing it. Installing a newer copy may replace your edits; preserve your configuration privately before updating.
+1. Open `about:debugging#/runtime/this-firefox`.
+2. Choose **Load Temporary Add-on** and select `dist/firefox/manifest.json`.
+3. Open the extension popup and choose **Settings**. Allow access to its declared sign-in sites if Firefox asks.
 
-`totp_uri` must be an existing `otpauth://totp/...` enrollment URI containing the authenticator secret. A six-digit code is not the secret. The script does not enroll an authenticator or extract secrets from an authenticator app. SHA-1, SHA-256, SHA-512, 6–8 digits, and custom periods are supported.
+Click **Reload** in `about:debugging` after rebuilding. A temporary add-on is removed when Firefox restarts. For a persistent installation in standard Firefox, the extension needs to be packaged and signed by Mozilla, either for a public listing or unlisted self-distribution. This repository does not include a signed release. See Mozilla’s [temporary installation guide](https://extensionworkshop.com/documentation/develop/temporary-installation-in-firefox/) and [signing and distribution guide](https://extensionworkshop.com/documentation/publish/signing-and-distribution-overview/).
 
-For Firefox private windows, allow Violentmonkey under **Extensions and Themes → Violentmonkey → Run in Private Windows → Allow**. See [Firefox's instructions](https://support.mozilla.org/en-US/kb/extensions-private-browsing).
+For private windows, allow the extension in **Add-ons and themes → Purdue automatic sign-in → Run in Private Windows**. Chrome has an equivalent **Allow in Incognito** switch on the extension’s details page.
 
-## Behavior
+## Configure
 
-- Runs on `sso.purdue.edu`, `idp.purdue.edu`, `login.microsoftonline.com`, and `purdue.brightspace.com`, over HTTPS and in the top-level page only. On Brightspace, it selects the campus on the `/d2l/login` page.
-- On Microsoft, requires Purdue's tenant, the configured account, or a recent continuation of that login. A different detected account prevents automation.
-- Fills username/password, chooses “Use a verification code” instead of app approval, and generates a TOTP locally with Web Crypto.
-- Checks “Don't show this again” and chooses **Yes** on “Stay signed in?”.
-- Excludes hidden login fields, preserves conflicting user-entered values, and prevents duplicate submissions.
-- Follows available password/code alternatives even when the previous authentication method reports an error. Errors block form submission while visible; the script keeps watching for recovery controls or a cleared message instead of permanently stopping. Rejected passwords and codes are not automatically resubmitted.
-- Waits for a fresh authenticator code when the current code has fewer than five seconds left.
-- Stops after three minutes on a single page. The Violentmonkey menu offers **pause/enable** and **retry sign-in**; retry clears the per-tab submission guard.
+1. Enter your Purdue career account, password, and an authenticator setup key or existing `otpauth://totp/…` enrollment URI in **Settings**.
+2. Choose your campus, enable automatic sign-in, and save.
+3. Start at a Purdue service such as [Brightspace](https://purdue.brightspace.com). The bare `https://sso.purdue.edu/` address is not a login entry point.
 
-The bare `https://sso.purdue.edu/` address is not a login entry point. Start from the Purdue service you want to use, such as [Brightspace](https://purdue.brightspace.com).
+To obtain a new setup key for an account that already has MFA, sign in at [Microsoft Security info](https://mysignins.microsoft.com/security-info) using your existing method. Choose **+ Add sign-in method → Microsoft Authenticator → Set up a different authenticator app → Can’t scan QR Code?** Copy the secret key into Settings and save. Use the displayed current code to verify the new method in Microsoft Security info. Keep your existing method until the new one works. Purdue describes this process in its [authentication code setup guide](https://service.purdue.edu/TDClient/32/Purdue/KB/Article/2219/How-To-Set-Up-Authentication-Codes-with-Yubikeys-for-Microsoft-MFA).
+
+A current six-digit code is not the setup key. The extension does not enroll an authenticator or extract secrets from another app. It supports SHA-1, SHA-256, SHA-512, 6–8 digits, and custom periods.
+
+The popup can pause automatic sign-in for 15 minutes, 30 minutes, one hour, or until you resume. While paused, use the website’s account controls to choose another account. **Retry on this tab** clears the tab’s submission guards and reloads the sign-in page with your current settings; it does not override a pause.
+
+The extension does not sign out, clear cookies, or change browser site data. Brightspace’s Log Out control may leave a Purdue SSO session active. If that prevents sign-in, use your browser’s site-data controls for the affected Purdue, Brightspace, and Microsoft sites.
+
+## Behavior and permissions
+
+- Runs only on HTTPS pages at `sso.purdue.edu`, `idp.purdue.edu`, `login.microsoftonline.com`, and `purdue.brightspace.com`, in the top-level page. Campus selection is limited to Brightspace’s `/d2l/login` page.
+- On Microsoft, requires Purdue’s tenant, the configured account, or a recent continuation of that login. A different detected account prevents automation.
+- Chooses password and verification-code alternatives, generates TOTP codes locally with Web Crypto, and checks “Don’t show this again” before choosing **Yes** on “Stay signed in?”.
+- Preserves conflicting user-entered values, ignores hidden fields, and prevents duplicate submissions. Visible errors block form submission while recovery alternatives remain available. Rejected passwords and codes are not automatically resubmitted.
+- Waits for a fresh code when fewer than five seconds remain. Stops after three minutes on a page. Changing or clearing settings stops automation in open tabs until they are reloaded.
+- Uses `storage` for local settings and `activeTab` to retry the selected sign-in tab. It needs no background worker or broad access to other sites.
 
 ## Credential handling
 
-Both installation methods store the password and authenticator secret together in the local browser profile. Anyone who can access that profile can potentially read both. A Violentmonkey export can also contain the credentials. This reduces the separation normally provided by two-factor authentication. Use a Chrome profile on a device you control, and clear the extension settings before sharing the profile. The Chrome extension stores the settings in `chrome.storage.local`; the userscript stores them in its installed source code.
+Settings use local extension storage, not browser sync. The password and authenticator secret are stored together in the browser profile; someone with access to that profile may be able to read both. This reduces the separation normally provided by two-factor authentication. Use a profile on a device you control and clear settings before sharing it. Keep credentials and authenticator secrets out of this repository, issues, and chats.
 
-There are no external libraries, telemetry, or network requests made by either implementation. They fill the normal Purdue/Microsoft login forms. Their session-storage markers contain timestamps, not credentials. See the official [metadata](https://violentmonkey.github.io/api/metadata-block/) and [API](https://violentmonkey.github.io/api/gm/) documentation for the userscript.
+The extension enters and submits the saved username, password, and generated codes through Purdue/Microsoft’s normal sign-in forms. The enrollment secret stays in the browser. There is no telemetry, remote code, external library, or separate network request made by the extension. Session-storage markers contain timestamps, not credentials.
+
+The Firefox manifest declares `authenticationInfo` because the extension submits authentication information to those websites. It uses Firefox’s [built-in data transmission disclosure](https://extensionworkshop.com/documentation/develop/firefox-builtin-data-consent/).
 
 ## Development
-
-Requires Node.js 20 or newer. No dependencies to install.
 
 ```sh
 npm test
 npm run check
+npm run build
+# Or build one target:
 npm run build:chrome
+npm run build:firefox
 ```
 
-The Chrome content script is generated from the userscript's sign-in logic. Run `npm run build:chrome` after changing that logic and commit the generated file. `npm run check` verifies it is current.
+For Mozilla’s package validator, run `npx --yes web-ext lint --source-dir dist/firefox --warnings-as-errors` after building. This optional check downloads the validator; it is not required to build or run the extension.
 
-Tests use synthetic credentials and public TOTP vectors. They cover TOTP generation, account guards, repeated submissions, input handling, the off-screen password field on Microsoft's username screen, the stay-signed-in checkbox/Yes sequence, and recovery through delayed authentication alternatives after an error. DOM tests simulate the forms; they do not sign in to a real account.
+| Path | Purpose |
+| --- | --- |
+| `extension/content.js` | Sign-in flow, account guards, pause and retry handling |
+| `extension/totp.js` | Shared authenticator parsing and code generation |
+| `extension/options.*` | Settings and enrollment verification |
+| `extension/popup.*` | Pause, resume, settings, and retry controls |
+| `extension/manifest.json` | Shared Manifest V3 configuration |
+| `scripts/build-extension.mjs` | Copies source files and adds Firefox manifest metadata |
+| `test/` | Synthetic sign-in, UI, TOTP, API compatibility, and build tests |
+| `dist/` | Generated installation folders; ignored by Git |
 
-The password/MFA flow was exercised against Purdue's live Microsoft login in September 2026. Version 1.0.4 was installed in Firefox on Tuesday, September 22, 2026; a fresh private-window login reached the authenticated Brightspace homepage without manual credential or code entry. Error recovery also has synthetic regression coverage. Login pages can change; this is an unofficial project and is not affiliated with Purdue or Microsoft.
+Edit files in `extension`, never generated files in `dist`. Both browsers use the same JavaScript, selecting Firefox’s `browser` API or Chrome’s `chrome` API. Keep the package and manifest versions aligned. Keep the Firefox add-on ID stable between releases so settings and updates retain their identity.
+
+Tests use synthetic credentials and public TOTP vectors. They exercise both API namespaces and simulate login forms; they do not sign in to a real Purdue account. Browser login pages can change. This is an unofficial project, unaffiliated with Purdue or Microsoft.

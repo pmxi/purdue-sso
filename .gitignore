@@ -7,3 +7,5 @@ credentials.json
 *.private.*
 *.local.*
 output/
+dist/
+web-ext-artifacts/
