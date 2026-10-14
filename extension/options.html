@@ -23,12 +23,11 @@
 <p>Settings stay in this browser profile. Anyone with access to this profile may be able to recover the password and authenticator secret.</p>
 <h2>Set up automatic sign-in</h2>
 <ol>
-  <li>After updating the extension files, reload it in <code>chrome://extensions</code> (Chrome) or <code>about:debugging#/runtime/this-firefox</code> (Firefox). Reload any open sign-in tabs too.</li>
-  <li>At <a href="https://mysignins.microsoft.com/security-info" target="_blank" rel="noopener noreferrer">Microsoft Security info</a>, sign in with your existing method. Choose <strong>+ Add sign-in method → Microsoft Authenticator → I want to use a different authenticator app → Can’t scan QR Code?</strong> <a href="https://service.purdue.edu/TDClient/32/Purdue/KB/Article/2219/How-To-Set-Up-Authentication-Codes-with-Yubikeys-for-Microsoft-MFA" target="_blank" rel="noopener noreferrer">Purdue’s guide</a> shows this path. A URL beginning <code>mobileappcommunicator.auth.microsoft.com/activatev2</code> means you are in Microsoft Authenticator setup; go back and choose the different-app link.</li>
-  <li>Copy the <strong>Secret key</strong> into the field below. Enter your career account and password, choose your campus, and enable automatic sign-in. Valid changes save automatically. Use the current code to verify the new method on Microsoft’s page; the code refreshes automatically. Keep your old method until verification succeeds.</li>
-  <li>Start sign-in from <a href="https://purdue.brightspace.com" target="_blank" rel="noopener noreferrer">Purdue Brightspace</a> or another Purdue service. Use the button in the extension popup to enable or disable automatic sign-in. Green means enabled; gray means disabled. When disabled, use the website’s own account controls to choose another account.</li>
+  <li>Open and sign-in to <a href="https://mysignins.microsoft.com/security-info" target="_blank" rel="noopener noreferrer">Microsoft Security info</a>.
+  <li>Choose <strong>+ Add sign-in method → Microsoft Authenticator → I want to use a different authenticator app → Can’t scan QR Code?</strong></li>
+  <li>Copy the <strong>Secret key</strong> into the field below.</li>
+  <li>Enter your career account and password.</li>
 </ol>
-<p>The extension fills sign-in forms and selects your configured campus and account. It does not sign you out or clear browser data. If a stale sign-in session causes trouble, use your browser's site-data controls for the affected Purdue, Brightspace, and Microsoft sites.</p>
 <form id="settings" autocomplete="off">
   <label>Career account
     <input id="username" name="username" required spellcheck="false" placeholder="username (without @purdue.edu)">
