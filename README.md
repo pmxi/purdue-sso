@@ -1,4 +1,4 @@
-# Purdue SSO
+# Automatic Purdue sign-in
 
 A browser extension for Chrome and Firefox that automates Purdue sign-in: campus and account selection, username, password, authenticator codes, and the “Stay signed in?” prompt. Automatic sign-in is off until you configure and enable it.
 
@@ -30,7 +30,7 @@ Requires Firefox for desktop 142 or newer.
 
 Click **Reload** in `about:debugging` after rebuilding. A temporary add-on is removed when Firefox restarts. For a persistent installation in standard Firefox, the extension needs to be packaged and signed by Mozilla, either for a public listing or unlisted self-distribution. This repository does not include a signed release. See Mozilla’s [temporary installation guide](https://extensionworkshop.com/documentation/develop/temporary-installation-in-firefox/) and [signing and distribution guide](https://extensionworkshop.com/documentation/publish/signing-and-distribution-overview/).
 
-For private windows, allow the extension in **Add-ons and themes → Purdue automatic sign-in → Run in Private Windows**. Chrome has an equivalent **Allow in Incognito** switch on the extension’s details page.
+For private windows, allow the extension in **Add-ons and themes → Automatic Purdue sign-in → Run in Private Windows**. Chrome has an equivalent **Allow in Incognito** switch on the extension’s details page.
 
 ## Configure
 

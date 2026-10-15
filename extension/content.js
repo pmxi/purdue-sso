@@ -221,7 +221,7 @@
       }
     } catch {
       stopped = true;
-      console.info('Purdue automatic sign-in stopped. Check your settings and reload the sign-in page.');
+      console.info('Automatic Purdue sign-in stopped. Check your settings and reload the sign-in page.');
     } finally {
       busy = false;
     }

@@ -3,7 +3,7 @@
   "version": "1.1.0",
   "private": true,
   "type": "module",
-  "description": "Purdue automatic sign-in extension for Chrome and Firefox",
+  "description": "Automatic Purdue sign-in extension for Chrome and Firefox",
   "license": "MIT",
   "scripts": {
     "test": "node --test test/*.test.mjs",

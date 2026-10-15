@@ -1,8 +1,8 @@
-# Privacy policy for Purdue automatic sign-in
+# Privacy policy for Automatic Purdue sign-in
 
-Last updated: October 14, 2026
+Last updated: October 15, 2026
 
-Purdue automatic sign-in is an unofficial browser extension. It is not affiliated with Purdue University or Microsoft.
+Automatic Purdue sign-in is an unofficial browser extension. It is not affiliated with Purdue University or Microsoft.
 
 ## Information stored in your browser
 

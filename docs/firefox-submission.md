@@ -4,9 +4,11 @@ Submission record and materials for version 1.1.0. Submitted to Mozilla on Octob
 
 ## Listing fields
 
-**Name:** Purdue automatic sign-in
+The current display name is **Automatic Purdue sign-in**. Version 1.1.0 was submitted as **Purdue automatic sign-in**; its uploaded archives and Git tag retain that original name. The rename applies to the current source and listing, and will enter the installed extension in the next package submission. The existing add-on ID and listing URL stay the same.
 
-**Suggested slug:** purdue-automatic-sign-in
+**Name:** Automatic Purdue sign-in
+
+**Listing slug:** purdue-automatic-sign-in
 
 **Summary:** Unofficial Purdue sign-in helper that fills your account details and verification codes using settings saved in this browser.
 
@@ -26,7 +28,7 @@ Submission record and materials for version 1.1.0. Submitted to Mozilla on Octob
 
 Reduce repeated typing when signing in to Purdue services such as Brightspace.
 
-After you configure and enable it, Purdue automatic sign-in selects your campus and account, fills your username and password, and generates and submits time-based authenticator codes locally. It can also choose Yes and Don't show this again on Microsoft's Stay signed in prompt.
+After you configure and enable it, Automatic Purdue sign-in selects your campus and account, fills your username and password, and generates and submits time-based authenticator codes locally. It can also choose Yes and Don't show this again on Microsoft's Stay signed in prompt.
 
 - One button enables or disables automatic sign-in: green when enabled, gray when disabled.
 - Settings save automatically, and the setup verification code refreshes with a countdown.
@@ -89,6 +91,7 @@ The distribution ZIP contains only built extension files and the MIT license. Th
 
 ## Submission status
 
+- On October 15, 2026, the listing name, description, and privacy policy were updated to **Automatic Purdue sign-in**. Version 1.1.0 remains awaiting review with its original uploaded package.
 - Version 1.1.0 submitted on October 14, 2026. Mozilla displayed **Version Submitted** and will email the publisher when it is published. The completion page says publication may take up to 24 hours, or longer for manual review.
 - [Manage listing](https://addons.mozilla.org/en-US/developers/addon/purdue-automatic-sign-in/edit) · [Version 1.1.0](https://addons.mozilla.org/en-US/developers/addon/purdue-automatic-sign-in/versions/6578260)
 - The distribution and matching source archives were uploaded. Rebuilding the source archive reproduced all 15 distribution files exactly. The uploaded source archive preserves the pre-submission copy of this status section.

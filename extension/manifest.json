@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Purdue automatic sign-in",
+  "name": "Automatic Purdue sign-in",
   "version": "1.1.0",
   "description": "Fill Purdue sign-in locally using your saved account and authenticator enrollment.",
   "icons": {
@@ -14,7 +14,7 @@
   "permissions": ["storage"],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Purdue automatic sign-in",
+    "default_title": "Automatic Purdue sign-in",
     "default_icon": {
       "16": "icons/icon-16.png",
       "24": "icons/icon-24.png",
