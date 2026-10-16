@@ -2,6 +2,8 @@
 
 A browser extension for Chrome and Firefox that automates Purdue sign-in: campus and account selection, username, password, authenticator codes, and the “Stay signed in?” prompt. Automatic sign-in is off until you configure and enable it.
 
+[Install from the Chrome Web Store](https://chromewebstore.google.com/detail/automatic-purdue-sign-in/eddemecijgomibcpkealhgbchfiphcnc). After installation, open the extension popup and click **Set up**. Firefox publication is still awaiting review.
+
 ## Build and install
 
 Requires Node.js 20 or newer. There are no runtime or build dependencies to install.
