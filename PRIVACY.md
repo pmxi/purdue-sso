@@ -1,12 +1,16 @@
 # Privacy policy for Automatic Purdue sign-in
 
-Last updated: October 15, 2026
+Last updated: October 16, 2026
 
 Automatic Purdue sign-in is an unofficial browser extension. It is not affiliated with Purdue University or Microsoft.
 
 ## Information stored in your browser
 
-The extension saves the career account, password, authenticator setup key or enrollment URI, campus, and enable/disable preference that you enter in Settings. These values are stored in the browser profile's local extension storage, not browser sync. The extension does not add encryption to that storage. Someone with access to the browser profile may be able to recover the password and authenticator secret.
+The extension saves the career account, password, authenticator setup key or enrollment URI, campus, and enable/disable preference that you enter in Settings. The career account, password, enrollment, and campus are encrypted together with AES-256-GCM before being saved in local extension storage. Each write uses a new random initialization vector. The enable/disable preference is stored separately. Browser sync is not used.
+
+The extension automatically creates a non-exportable Web Crypto key and keeps it in its own IndexedDB database in this browser profile. Encryption and decryption require no unlock prompt. Non-exportable means extension code cannot export the raw key through the Web Crypto API; it does not mean the key is protected by a separate password, hardware security, or an operating-system credential store. Someone with access to the browser profile or a compromised device may still recover or use the key and credentials. Storing the password and authenticator secret together reduces the separation normally provided by two-factor authentication.
+
+The background extension context decrypts settings when needed. The popup receives only setup and enable/disable status. The Settings page can display and edit the saved values. Sign-in scripts receive the account and campus, and request a password or generated verification code when needed; they do not receive the authenticator setup key. If an older version saved unencrypted settings, the extension encrypts and verifies them before removing their active plaintext entries. This does not erase older browser or device backups.
 
 The extension also uses temporary timestamps in the sign-in websites' session storage to limit repeated form submissions and recognize a recent continuation of a Purdue login. Those markers contain timestamps, not credentials.
 
@@ -24,7 +28,7 @@ The developer does not receive your credentials, authenticator secret, browsing 
 
 You can disable automatic sign-in from the popup or Settings. Disabling it retains your saved settings but stops automatic form submission. Changes to credentials or campus stop automation in already-open sign-in tabs until those tabs are reloaded.
 
-Use Clear settings to remove the saved extension settings. Reload or close open sign-in tabs afterward to discard credentials already held in those tabs' memory. Clearing extension settings does not sign you out of Purdue or Microsoft, delete their cookies, or revoke an authenticator enrollment. Manage those separately through the relevant websites and browser controls.
+Use Clear settings to remove the encrypted settings, enable/disable preference, and stored encryption key. Reload or close open sign-in tabs afterward to discard credentials already held in those tabs' memory. Clearing extension settings does not sign you out of Purdue or Microsoft, delete their cookies, or revoke an authenticator enrollment. Manage those separately through the relevant websites and browser controls.
 
 Settings remain in the browser profile until you change or clear them. Browser or device backups may retain copies according to your own backup settings. The developer has no copy of these local settings to retrieve or delete.
 

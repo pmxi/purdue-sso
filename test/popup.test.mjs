@@ -24,6 +24,12 @@ for (const apiName of ['chrome', 'browser']) {
     const settingsButton = { addEventListener(_type, handler) { openSettings = handler; } };
     const context = vm.createContext({
       document: { querySelector: selector => ({ '#toggle': toggle, '#state': state, '#settings': settingsButton })[selector] },
+      PurdueSettings: { async request(type) {
+        if (type === 'status') return { ready: !!(store.username && store.password && store.totp_uri), enabled: store.enabled };
+        assert.equal(type, 'toggle');
+        if (failSave) throw new Error('Synthetic storage failure');
+        store.enabled = !store.enabled;
+      } },
       [apiName]: {
         storage: {
           local: {
@@ -75,7 +81,7 @@ for (const apiName of ['chrome', 'browser']) {
     assert.equal(store.enabled, true);
 
     delete store.password;
-    onChanged({ password: { newValue: undefined } }, 'local');
+    onChanged({ vault: { newValue: undefined } }, 'local');
     await new Promise(resolve => setImmediate(resolve));
     assert.equal(state.textContent, 'Set up');
     assert.equal(toggle.dataset.enabled, 'false');

@@ -1,11 +1,13 @@
 (async () => {
   'use strict';
   const extensionApi = globalThis.browser ?? globalThis.chrome;
-  const { generateTotp } = globalThis.PurdueTotp;
-  const config = await extensionApi.storage.local.get(['username', 'password', 'totp_uri', 'enabled', 'campus']);
+  const { request } = globalThis.PurdueSettings;
+  let config;
+  try { config = await request('login.config'); }
+  catch { return; }
   config.username = (config.username || '').trim().replace(/@purdue\.edu$/i, '');
   config.email = config.username + '@purdue.edu';
-  const ready = config.username && config.password && config.totp_uri;
+  const ready = config.ready;
   const tenant = '4130bd39-7c53-419c-b1e5-8758d6d63f21';
   const microsoft = location.hostname === 'login.microsoftonline.com';
   const brightspace = location.hostname === 'purdue.brightspace.com';
@@ -26,7 +28,7 @@
     if (area !== 'local') return;
     // Open pages must never keep using credentials after settings are changed
     // or cleared. Reloading starts a new run with the latest saved settings.
-    if (['username', 'password', 'totp_uri', 'campus'].some(key =>
+    if (['vault', 'username', 'password', 'totp_uri', 'campus'].some(key =>
       changes[key] && changes[key].oldValue !== changes[key].newValue)) {
       stopped = true;
       clearInterval(timer);
@@ -199,17 +201,19 @@
       if (password) {
         const submit = control(/^(sign in|log in|login)$/i);
         if (!submit) return;
+        if (done.has('password')) return;
+        const value = await request('login.password', { revision: config.revision });
+        if (stopped || !enabled || !visible(password) || !visible(submit) || !purdueContext()) return;
         if (username && !fill(username, microsoft ? config.email : config.username)) return;
-        if (fill(password, config.password)) click('password', submit);
+        if (fill(password, value)) click('password', submit);
         return;
       }
       if (otp && /enter (?:a |the )?code|verification code/i.test(text)) {
         const submit = control(/^(verify|sign in|continue)$/i);
         if (!submit || done.has('otp')) return;
-        const period = Number(new URL(config.totp_uri).searchParams.get('period') || 30);
+        const { code, expiresAt } = await request('login.code', { revision: config.revision });
         // Wait for a fresh code when the current one is about to expire.
-        if (period - (Date.now() / 1000 % period) < 5) return;
-        const code = await generateTotp(config.totp_uri);
+        if (expiresAt - Date.now() < 5000) return;
         if (!stopped && enabled && visible(otp) && visible(submit)
           && purdueContext() && fill(otp, code)) click('otp', submit);
         return;

@@ -1,4 +1,5 @@
 const extensionApi = globalThis.browser ?? globalThis.chrome;
+const { request } = globalThis.PurdueSettings;
 const { validTotpUri, normalizeEnrollment, generateTotp } = globalThis.PurdueTotp;
 const fields = ['username', 'password', 'totp_uri', 'campus', 'enabled'];
 const status = document.querySelector('#status');
@@ -88,7 +89,7 @@ function saveField(field) {
   showSaveStatus();
   // Serialize writes so Clear settings always runs after any in-flight save.
   writes = writes.then(async () => {
-    await extensionApi.storage.local.set({ [field]: value });
+    await request('settings.write', { field, value });
     if (!clearing && fieldValue(field) === value) {
       errors.delete(field);
       if (field === 'totp_uri') setCodeUri(value);
@@ -102,7 +103,12 @@ function saveField(field) {
   return writes;
 }
 
-const saved = await extensionApi.storage.local.get(fields);
+let saved = {};
+try { saved = await request('settings.read'); }
+catch {
+  status.textContent = 'Could not read saved settings. Reload to retry, or clear settings to start over.';
+  form.inert = true;
+}
 for (const field of fields) {
   if (field === 'enabled') inputs[field].checked = saved.enabled === true;
   else if (field === 'campus') inputs[field].value = saved.campus || 'Purdue West Lafayette / Indianapolis';
@@ -140,7 +146,7 @@ document.querySelector('#clear').addEventListener('click', async () => {
   setCodeUri(null);
   try {
     await writes;
-    await extensionApi.storage.local.remove(fields);
+    await request('settings.clear');
     form.reset();
     errors.clear();
     status.textContent = 'Settings cleared. Reload any open Purdue sign-in page.';

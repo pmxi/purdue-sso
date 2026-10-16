@@ -16,7 +16,7 @@ for (const apiName of ['chrome', 'browser']) {
     assert.equal(manifest.version, packageJson.version, 'Keep extension and package versions aligned');
     assert.deepEqual(manifest.permissions, ['storage']);
     assert.equal(manifest.host_permissions, undefined);
-    assert.equal(manifest.background, undefined, 'Automatic sign-in needs no background worker');
+    assert.equal(manifest.background.service_worker, 'background.js');
     assert.deepEqual(manifest.content_scripts[0].matches, [
       'https://sso.purdue.edu/*',
       'https://idp.purdue.edu/*',
@@ -54,6 +54,11 @@ for (const apiName of ['chrome', 'browser']) {
           if (selector.startsWith('input[name="loginfmt"]')) return [username];
           if (selector.startsWith('button, a,')) return [next];
           return [];
+        } },
+        PurdueSettings: { async request(type) {
+          assert.equal(type, 'login.config');
+          storageReads++;
+          return { username: 'test', ready: true, enabled, revision: 'test' };
         } },
         [apiName]: { storage: { onChanged: { addListener() {} }, local: { async get(keys) {
           storageReads++;

@@ -1,6 +1,6 @@
-# Chrome Web Store draft
+# Chrome Web Store submission
 
-Prepared October 15, 2026 for version 1.1.1, **Automatic Purdue sign-in**. This version includes the rename and setup-instruction edits made after the Firefox 1.1.0 submission. The Firefox release archive and `v1.1.0` tag remain unchanged.
+Updated October 16, 2026 for version 1.1.2, **Automatic Purdue sign-in**. This version adds automatic AES-256-GCM encryption of saved credentials and a compatible background context for Chrome and Firefox. The Firefox release archive and `v1.1.0` tag remain unchanged.
 
 ## Status
 
@@ -10,9 +10,8 @@ Prepared October 15, 2026 for version 1.1.1, **Automatic Purdue sign-in**. This 
 - Saved the description, Tools category, English language, homepage/support URLs, store icon, and small promotional tile. Saved the single-purpose and permission explanations, no-remote-code declaration, and data categories: personally identifiable information, authentication information, and website content.
 - Saved the reviewer instructions below. Distribution defaults are free of charge, public, and all regions; the item itself remains unpublished.
 - On October 16, 2026, pushed the extension commits and `v1.1.0` tag to GitHub. The privacy policy is public at https://github.com/pmxi/purdue-sso/blob/main/PRIVACY.md and that URL is saved in the Chrome draft. Added a 1280 × 800 store screenshot graphic based on the publisher's popup capture.
-- The Chrome 1.1.1 ZIP is built and verified: 15 files, with the manifest at the archive root. All 15 automated tests and JavaScript syntax checks pass. SHA-256: `ae081b59d91bd276483db171ac18cdddd970fcad9ca09a99c6c93a325da8d76d`.
-- Before review: resolve storage of credentials and authenticator secrets at rest. The current implementation saves them in unencrypted `storage.local`; Google's secure-handling FAQ requires strong encryption at rest. No storage redesign has been chosen or implemented.
-- Before review: complete the final data-use certifications after resolving the credential-storage design and updating the privacy policy to match it. After saving the screenshot and privacy URL, Google's submission checklist lists only the final data-use certification as incomplete; this form check does not establish policy compliance or resolve encryption.
+- The previous Chrome 1.1.1 ZIP was built and verified: 15 files, with the manifest at the archive root. All 15 automated tests and JavaScript syntax checks pass. SHA-256: `ae081b59d91bd276483db171ac18cdddd970fcad9ca09a99c6c93a325da8d76d`.
+- Version 1.1.2 is prepared with encrypted storage, automatic plaintext migration, restricted background messages, and updated privacy disclosures. All 23 tests and syntax checks pass. Both browser packages build, and Firefox validation reports 0 errors, warnings, or notices. The Chrome ZIP contains 18 files and has SHA-256 `163bc0c18316c3ebb42b003a58e4e58581851b8a5bc7615c919ba0b0b7bffd3d`. Store upload and submission are pending.
 - Full sign-in testing requires an authorized Purdue account. No live test credentials are included in this repository or package.
 
 ## Listing fields
@@ -49,7 +48,7 @@ After you configure and enable it, Automatic Purdue sign-in selects your campus 
 
 Setup requires a Purdue account and an authenticator setup key or compatible otpauth enrollment URI. A current six-digit verification code is not a setup key. Follow the instructions in Settings to add and verify an authenticator method. Automatic sign-in starts disabled.
 
-The current draft stores credentials and the authenticator secret together in your local browser profile without additional extension-level encryption. Someone with access to that profile may be able to recover both. When enabled, the extension submits your username, password, and generated codes to Purdue/Microsoft's normal HTTPS sign-in forms. The setup key stays in the browser. You can disable automation or clear saved settings at any time.
+Credentials and the authenticator secret are encrypted with AES-256-GCM in your local browser profile. A non-exportable encryption key is stored in the same profile, so no extra unlock step is needed. This is not an operating-system or hardware-backed vault; someone with access to the profile or a compromised device may still recover or use the key and credentials. When enabled, the extension submits your username, password, and generated codes to Purdue/Microsoft's normal HTTPS sign-in forms. The setup key stays in the browser. You can disable automation or clear saved settings at any time.
 
 This is an unofficial project, not affiliated with or endorsed by Purdue University or Microsoft. Login pages may change, and some account or authentication configurations may require manual sign-in.
 
@@ -57,13 +56,13 @@ This is an unofficial project, not affiliated with or endorsed by Purdue Univers
 
 **Single purpose:** Automate the standard Purdue sign-in flow for the account configured by the user, including campus and account selection, account credentials, and locally generated authenticator codes.
 
-**Storage permission:** Save the user-entered career account, password, authenticator enrollment, campus, and enable/disable preference locally in this browser profile. Browser sync is not used.
+**Storage permission:** Save the user-entered career account, password, authenticator enrollment, and campus as AES-256-GCM ciphertext in local extension storage; save the enable/disable preference separately. A non-exportable key is kept in extension IndexedDB. Browser sync is not used.
 
 **Site access:** Content scripts identify and fill the normal sign-in forms on `sso.purdue.edu`, `idp.purdue.edu`, `login.microsoftonline.com`, and `purdue.brightspace.com`. Brightspace automation is limited to its login page. Microsoft automation checks the Purdue tenant, configured account, or a recent continuation of that sign-in. Access to these pages is necessary for the extension's single purpose.
 
 **Remote code:** None. All executable code is included in the extension package. No remotely hosted scripts, eval, or external runtime libraries are used.
 
-Data-use declarations must reflect the username, authentication information, and sign-in page content and URLs used to recognize and complete the flow. Local processing must be disclosed; absence of developer-operated servers does not mean the extension handles no user data. Check the dashboard's definitions when filling its categories. Do not certify full policy compliance while the storage issue is unresolved.
+Data-use declarations must reflect the username, authentication information, and sign-in page content and URLs used to recognize and complete the flow. Local processing must be disclosed; absence of developer-operated servers does not mean the extension handles no user data. Check the dashboard's definitions when filling its categories. The three limited-use disclosures match the implementation: no data sales, no unrelated use, and no creditworthiness or lending use.
 
 ## Reviewer testing instructions
 
@@ -81,14 +80,15 @@ Run `npm test` and `npm run check` for synthetic tests and JavaScript syntax che
 
 ## Build and packaging
 
-Node.js 20 or newer, with no dependencies to install:
+Node.js 20 or newer. The only dependency is used by tests and is excluded from packages:
 
 ```sh
+npm ci
 npm test
 npm run check
 npm run build:chrome
 mkdir -p dist/packages
-(cd dist/chrome && zip -X -r ../packages/purdue-sso-chrome-1.1.1.zip .)
+(cd dist/chrome && zip -X -r ../packages/purdue-sso-chrome-1.1.2.zip .)
 ```
 
 The ZIP must have `manifest.json` at its root. Upload only the built extension, icons, and MIT license, excluding source tests, screenshots, local credentials, and development tools. The build script uses an explicit file allowlist.

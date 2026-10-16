@@ -53,6 +53,10 @@ for (const apiName of ['chrome', 'browser']) {
             return [];
           },
         },
+        PurdueSettings: { async request(type) {
+          assert.equal(type, 'login.config');
+          return { username: 'test', ready: true, enabled, campus, revision: 'test' };
+        } },
         [apiName]: {
           storage: {
             local: { async get(keys) {
@@ -123,7 +127,7 @@ for (const apiName of ['chrome', 'browser']) {
     }
 
     {
-      for (const key of ['username', 'password', 'totp_uri', 'campus']) {
+      for (const key of ['vault', 'username', 'password', 'totp_uri', 'campus']) {
         const clicked = [];
         const controls = [element('Purdue West Lafayette / Indianapolis', () => clicked.push('west'))];
         const { changes } = await contentPage({ hostname: 'purdue.brightspace.com', pathname: '/d2l/login',

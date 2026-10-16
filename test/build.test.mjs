@@ -21,10 +21,14 @@ test('Chrome and Firefox builds contain complete, identical code with target-spe
   assert.equal(firefox.browser_specific_settings.gecko.strict_min_version, '142.0');
   assert.equal(firefox.browser_specific_settings.gecko_android, undefined, 'Initial store release is for desktop Firefox');
   assert.deepEqual(firefox.browser_specific_settings.gecko.data_collection_permissions.required, ['authenticationInfo']);
+  assert.deepEqual(chrome.background, { service_worker: 'background.js', type: 'module' });
+  assert.deepEqual(firefox.background, { scripts: ['background.js'], type: 'module' });
+  delete firefox.background;
+  delete chrome.background;
   delete firefox.browser_specific_settings;
-  assert.deepEqual(firefox, chrome, 'Only the Firefox metadata differs');
+  assert.deepEqual(firefox, chrome, 'Only browser background configuration and Firefox metadata differ');
 
-  const expected = ['LICENSE', 'content.js', 'icons', 'manifest.json', 'options.html', 'options.js', 'popup.html', 'popup.js', 'totp.js'];
+  const expected = ['LICENSE', 'background.js', 'client.js', 'content.js', 'icons', 'manifest.json', 'options.html', 'options.js', 'popup.html', 'popup.js', 'totp.js', 'vault.js'];
   for (const target of ['chrome', 'firefox']) {
     assert.deepEqual((await readdir(new URL(`dist/${target}/`, root))).sort(), expected);
     for (const name of expected.filter(name => !['manifest.json', 'icons'].includes(name))) {
@@ -37,7 +41,7 @@ test('Chrome and Firefox builds contain complete, identical code with target-spe
       assert.deepEqual(await readFile(new URL(`dist/${target}/${name}`, root)),
         await readFile(new URL(`extension/${name}`, root)), `Package contains ${name}`);
     }
-    assert.deepEqual(manifest.content_scripts[0].js, ['totp.js', 'content.js']);
+    assert.deepEqual(manifest.content_scripts[0].js, ['client.js', 'content.js']);
     for (const page of [manifest.options_page, manifest.action.default_popup]) {
       const html = await readFile(new URL(`dist/${target}/${page}`, root), 'utf8');
       for (const [, script] of html.matchAll(/<script[^>]+src="([^"]+)"/g)) {

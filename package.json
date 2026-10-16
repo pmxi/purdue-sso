@@ -1,13 +1,13 @@
 {
   "name": "purdue-sso",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "private": true,
   "type": "module",
   "description": "Automatic Purdue sign-in extension for Chrome and Firefox",
   "license": "MIT",
   "scripts": {
     "test": "node --test test/*.test.mjs",
-    "check": "node --check extension/content.js && node --check extension/totp.js && node --check extension/options.js && node --check extension/popup.js && node --check scripts/build-extension.mjs && node --check scripts/render-icons.mjs",
+    "check": "node --check extension/background.js && node --check extension/vault.js && node --check extension/client.js && node --check extension/content.js && node --check extension/totp.js && node --check extension/options.js && node --check extension/popup.js && node --check scripts/build-extension.mjs && node --check scripts/render-icons.mjs",
     "icons": "node scripts/render-icons.mjs",
     "build": "node scripts/build-extension.mjs",
     "build:chrome": "node scripts/build-extension.mjs chrome",
@@ -15,5 +15,8 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "fake-indexeddb": "^6.2.5"
   }
 }

@@ -55,19 +55,22 @@ The extension does not sign out, clear cookies, or change browser site data. Bri
 - Chooses password and verification-code alternatives, generates TOTP codes locally with Web Crypto, and checks “Don’t show this again” before choosing **Yes** on “Stay signed in?”.
 - Preserves conflicting user-entered values, ignores hidden fields, and prevents duplicate submissions. Visible errors block form submission while recovery alternatives remain available. Rejected passwords and codes are not automatically resubmitted.
 - Waits for a fresh code when fewer than five seconds remain. Stops after three minutes on a page. The enable/disable button takes effect in open login tabs. Changing or clearing credentials stops automation in those tabs until they are reloaded.
-- Uses only the `storage` API permission for local settings. It needs no background worker or broad access to other sites.
+- Uses only the `storage` API permission for local settings. A background context handles encrypted settings and generates sign-in codes. No broad access to other sites is requested.
 
 ## Credential handling
 
-Settings use local extension storage, not browser sync. The password and authenticator secret are stored together in the browser profile; someone with access to that profile may be able to read both. This reduces the separation normally provided by two-factor authentication. Use a profile on a device you control and clear settings before sharing it. Keep credentials and authenticator secrets out of this repository, issues, and chats.
+The career account, password, authenticator enrollment, and campus are encrypted with AES-256-GCM before being written to local extension storage. Every write uses a fresh random 96-bit IV and a 128-bit authentication tag. A per-installation, non-exportable Web Crypto key is persisted in the extension's IndexedDB database. The enable/disable preference is stored separately; browser sync is not used. No unlock prompt or extra setup step is needed. Existing plaintext settings are encrypted and verified before their active plaintext entries are removed. Clear settings removes both ciphertext and key.
 
-The extension enters and submits the saved username, password, and generated codes through Purdue/Microsoft’s normal sign-in forms. The enrollment secret stays in the browser. There is no telemetry, remote code, external library, or separate network request made by the extension. Session-storage markers contain timestamps, not credentials.
+The key stays in the same browser profile. Non-exportable prevents raw-key export through Web Crypto; it is not an OS-bound or hardware-backed guarantee. Someone with access to that profile or a compromised device may still recover or use both the password and authenticator secret. This reduces the separation normally provided by two-factor authentication. Use a profile on a device you control and clear settings before sharing it. Keep credentials and authenticator secrets out of this repository, issues, and chats.
+
+The extension enters and submits the saved username, password, and generated codes through Purdue/Microsoft’s normal sign-in forms. The background context retains the enrollment secret; sign-in scripts request generated codes, never the secret. Background requests check the extension sender, page URL, top-level frame, enabled state, and settings revision. Missing keys or damaged ciphertext stop access; there is no plaintext fallback. There is no telemetry, remote code, external library, or separate network request made by the extension. Session-storage markers contain timestamps, not credentials.
 
 The Firefox manifest declares `authenticationInfo` because the extension submits authentication information to those websites. It uses Firefox’s [built-in data transmission disclosure](https://extensionworkshop.com/documentation/develop/firefox-builtin-data-consent/).
 
 ## Development
 
 ```sh
+npm ci # test-only IndexedDB implementation
 npm test
 npm run check
 npm run build
@@ -80,6 +83,9 @@ For Mozilla’s package validator, run `npx --yes web-ext lint --source-dir dist
 
 | Path | Purpose |
 | --- | --- |
+| `extension/vault.js` | AES-GCM encryption and persistent non-exportable key storage |
+| `extension/background.js` | Serialized settings operations and restricted credential messages |
+| `extension/client.js` | Shared background-message client |
 | `extension/content.js` | Sign-in flow, account guards, and live enable/disable handling |
 | `extension/totp.js` | Shared authenticator parsing and code generation |
 | `extension/options.*` | Settings and enrollment verification |
@@ -87,7 +93,7 @@ For Mozilla’s package validator, run `npx --yes web-ext lint --source-dir dist
 | `extension/manifest.json` | Shared Manifest V3 configuration |
 | `assets/icon.svg` | Editable source for the black-and-gold sign-in icon |
 | `extension/icons/` | Committed PNG icons used by both browsers |
-| `scripts/build-extension.mjs` | Copies source files and adds Firefox manifest metadata |
+| `scripts/build-extension.mjs` | Copies source files and sets Chrome service-worker / Firefox event-page manifests |
 | `scripts/render-icons.mjs` | Regenerates PNG sizes from the SVG using ImageMagick |
 | `test/` | Synthetic sign-in, UI, TOTP, API compatibility, and build tests |
 | `dist/` | Generated installation folders; ignored by Git |
@@ -96,7 +102,7 @@ Edit files in `extension`, never generated files in `dist`. Both browsers use th
 
 To change the icon, edit `assets/icon.svg`, install [ImageMagick](https://imagemagick.org/script/download.php) if needed, and run `npm run icons`. Commit the SVG and regenerated PNGs together, then rebuild. Normal builds use the committed PNGs and do not require ImageMagick.
 
-Tests use synthetic credentials and public TOTP vectors. They exercise both API namespaces and simulate login forms; they do not sign in to a real Purdue account. Browser login pages can change. This is an unofficial project, unaffiliated with Purdue or Microsoft.
+Tests use synthetic credentials, public TOTP vectors, real Web Crypto, and a test-only IndexedDB implementation (`fake-indexeddb`). They cover encryption, restart recovery, migration, tampering, deletion, concurrent saves, and message authorization. They exercise both API namespaces and simulate login forms; they do not sign in to a real Purdue account. Browser login pages can change. This is an unofficial project, unaffiliated with Purdue or Microsoft.
 
 ## License and privacy
 

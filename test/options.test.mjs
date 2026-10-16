@@ -49,6 +49,16 @@ async function openSettings(apiName, initial = {}, generate = generateTotp) {
         return nodes[selector.slice(1)];
       },
     },
+    PurdueSettings: { async request(type, values) {
+      if (type === 'settings.read') return { ...store };
+      if (type === 'settings.clear') { for (const key of fields) delete store[key]; return; }
+      assert.equal(type, 'settings.write');
+      await beforeSave();
+      const { field, value } = values;
+      writes.push({ [field]: value });
+      store[field] = value;
+      listeners.storage({ [field]: { newValue: value } }, 'local');
+    } },
     [apiName]: { storage: {
       onChanged: { addListener(handler) { listeners.storage = handler; } },
       local: {

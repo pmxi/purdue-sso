@@ -1,4 +1,4 @@
-// Shared by the content script and settings page in their extension contexts.
+// Shared by the background context and settings page in their extension contexts.
 (() => {
   'use strict';
 

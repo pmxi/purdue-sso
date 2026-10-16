@@ -1,16 +1,13 @@
 const extensionApi = globalThis.browser ?? globalThis.chrome;
 const toggle = document.querySelector('#toggle');
 const state = document.querySelector('#state');
-const fields = ['enabled', 'username', 'password', 'totp_uri'];
+const { request } = globalThis.PurdueSettings;
+const fields = ['enabled', 'vault'];
 let saving = false;
 
-function configured(settings) {
-  return !!(settings.username?.trim() && settings.password && settings.totp_uri);
-}
-
 async function refresh() {
-  const settings = await extensionApi.storage.local.get(fields);
-  const ready = configured(settings);
+  const settings = await request('status');
+  const ready = settings.ready;
   const enabled = ready && settings.enabled === true;
   state.textContent = ready ? enabled ? 'Enabled' : 'Disabled' : 'Set up';
   toggle.dataset.enabled = String(enabled);
@@ -37,11 +34,11 @@ toggle.addEventListener('click', async () => {
   saving = true;
   toggle.disabled = true;
   try {
-    const settings = await extensionApi.storage.local.get(fields);
-    if (!configured(settings)) {
+    const settings = await request('status');
+    if (!settings.ready) {
       await extensionApi.runtime.openOptionsPage();
     } else {
-      await extensionApi.storage.local.set({ enabled: settings.enabled !== true });
+      await request('toggle');
       await refresh();
     }
   } catch {

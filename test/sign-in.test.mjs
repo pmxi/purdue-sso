@@ -11,8 +11,14 @@ for (const apiName of ['chrome', 'browser']) {
     const config = { username: 'test', email: 'test@purdue.edu', password: 'dummy', totp_uri: 'otpauth://totp/Test?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ' };
     let source = await readFile(new URL('../extension/content.js', import.meta.url), 'utf8');
     source = source.slice(0, source.lastIndexOf('  scheduleTicks();'))
-      + '  globalThis.testApi = { generateTotp, purdueContext, claim, fill, tick, visible, purdueAccountPicker, savedAccountTile }; return;\n})();';
+      + '  globalThis.testApi = { generateTotp: globalThis.PurdueTotp.generateTotp, purdueContext, claim, fill, tick, visible, purdueAccountPicker, savedAccountTile }; return;\n})();';
     source = await readFile(new URL('../extension/totp.js', import.meta.url), 'utf8') + '\n' + source;
+    const settingsClient = { async request(type) {
+      if (type === 'login.config') return { username: config.username, enabled: true, ready: true, revision: 'test' };
+      if (type === 'login.password') return config.password;
+      if (type === 'login.code') return { code: referenceTotp(config.totp_uri, 1_234_567_890_000), expiresAt: 1_234_567_920_000 };
+      throw new Error('Unexpected request');
+    } };
     const extensionApi = {
       storage: { local: { async get(keys) {
         const saved = { ...config, enabled: true };
@@ -31,7 +37,7 @@ for (const apiName of ['chrome', 'browser']) {
       URL, crypto: webcrypto, console, HTMLInputElement: Input,
       Event: class { constructor(type) { this.type = type; } },
       location: { protocol: 'https:', hostname: 'login.microsoftonline.com', pathname: '/common/login' },
-      [apiName]: extensionApi,
+      PurdueSettings: settingsClient, [apiName]: extensionApi,
       sessionStorage: { getItem: key => session.get(key), setItem: (key, value) => session.set(key, value) },
       document: { querySelector: () => null, querySelectorAll: selector => selector.startsWith('#displayName')
         ? identities.map(value => ({ value })) : [] },
@@ -163,7 +169,7 @@ for (const apiName of ['chrome', 'browser']) {
         URL, crypto: webcrypto, console, HTMLInputElement: Input, Event: context.Event,
         Date: class extends Date { static now() { return 1_234_567_890_000; } },
         location: { protocol: 'https:', hostname: 'login.microsoftonline.com', pathname: '/common/login' },
-        [apiName]: extensionApi,
+        PurdueSettings: settingsClient, [apiName]: extensionApi,
         sessionStorage: { getItem: key => storage.get(key), setItem: (key, value) => storage.set(key, value) },
         getComputedStyle: () => ({ visibility: 'visible' }),
         document: {

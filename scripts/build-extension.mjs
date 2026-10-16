@@ -15,6 +15,7 @@ for (const target of new Set(targets)) {
   const destination = new URL(`dist/${target}/`, root);
   const manifest = structuredClone(base);
   if (target === 'firefox') {
+    manifest.background = { scripts: ['background.js'], type: 'module' };
     manifest.browser_specific_settings = {
       gecko: {
         id: 'purdue-sso@pmxi.github.io',
@@ -28,7 +29,7 @@ for (const target of new Set(targets)) {
   await mkdir(destination, { recursive: true });
   await cp(new URL('LICENSE', root), new URL('LICENSE', destination));
   // Explicit allowlist keeps local files and development tools out of packages.
-  for (const name of ['content.js', 'totp.js', 'options.js', 'options.html', 'popup.js', 'popup.html']) {
+  for (const name of ['background.js', 'vault.js', 'client.js', 'content.js', 'totp.js', 'options.js', 'options.html', 'popup.js', 'popup.html']) {
     await cp(new URL(`extension/${name}`, root), new URL(name, destination));
   }
   await mkdir(new URL('icons/', destination));
