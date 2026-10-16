@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="800" viewBox="0 0 1280 800">
+  <title>Automatic Purdue sign-in — enabled popup</title>
+  <desc>A vector rendering of the extension's enabled popup. The controls, colors, labels, and icon paths follow extension/popup.html. No generated imagery or user credentials are included.</desc>
+  <rect width="1280" height="800" fill="#f4f4f5"/>
+  <g font-family="Arial, Helvetica, sans-serif" text-anchor="middle">
+    <text x="640" y="158" font-size="48" font-weight="700" fill="#18181b">Automatic Purdue sign-in</text>
+    <text x="640" y="700" font-size="26" fill="#52525b">One click to enable or disable</text>
+  </g>
+
+  <!-- Popup geometry mirrors the 240px-wide light-theme interface at 2.5×. -->
+  <g transform="translate(340 260) scale(2.5)" font-family="Arial, Helvetica, sans-serif">
+    <rect width="240" height="150.2" rx="8" fill="#fff" stroke="#d4d4d8" stroke-width=".6"/>
+    <rect x="12" y="12" width="216" height="82.2" rx="12" fill="#15803d"/>
+    <svg x="30" y="40.1" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round">
+      <path d="M12 3v9M6.3 5.7a9 9 0 1 0 11.4 0"/>
+    </svg>
+    <text x="70" y="42" font-size="12" fill="#fff">Automatic sign-in</text>
+    <text x="70" y="68" font-size="21" font-weight="700" fill="#fff">Enabled</text>
+    <svg x="82" y="110.2" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#52525b" stroke-width="1.75" stroke-linejoin="round">
+      <path d="M10 3h4l.6 2.5 1.7 1 2.5-.7 2 3.4L19 11v2l1.8 1.8-2 3.4-2.5-.7-1.7 1L14 21h-4l-.6-2.5-1.7-1-2.5.7-2-3.4L5 13v-2L3.2 9.2l2-3.4 2.5.7 1.7-1Z"/>
+      <circle cx="12" cy="12" r="3"/>
+    </svg>
+    <text x="108" y="125.2" font-size="14" fill="#52525b">Settings</text>
+  </g>
+</svg>

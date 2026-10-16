@@ -5,11 +5,12 @@ Updated October 16, 2026 for version 1.1.2, **Automatic Purdue sign-in**. This v
 ## Status
 
 - Version **1.1.2** was submitted, approved, and manually published on October 16, 2026. The dashboard confirms **Published — public**, and the [public Chrome Web Store listing](https://chromewebstore.google.com/detail/automatic-purdue-sign-in/eddemecijgomibcpkealhgbchfiphcnc) displays version 1.1.2. Automatic publication was disabled during review; after approval, the publisher explicitly authorized publication. The staged publication deadline no longer applies.
+- Later on October 16, 2026, submitted a listing-only screenshot replacement for review. The replacement PNG is rendered from editable SVG and uses no image-generation assets. The old screenshot was removed from the draft, leaving only the replacement. Google confirmed submission, and the update is **Pending review** with automatic publication enabled. No new extension package was uploaded; the published release remains version 1.1.2. The screenshot replacement is not confirmed live until this listing update is approved and published.
 - [Manage submission](https://chrome.google.com/webstore/devconsole/ff1a382b-328f-421e-b4cc-c4df094d8f2c/eddemecijgomibcpkealhgbchfiphcnc/edit/package). Item ID: `eddemecijgomibcpkealhgbchfiphcnc`.
 - Publisher registration is complete. The publisher authorized the non-trader declaration, added and verified the public contact email, and chose the display name **Paras Mittal**.
 - Saved the description, Tools category, English language, homepage/support URLs, store icon, and small promotional tile. Saved the single-purpose and permission explanations, no-remote-code declaration, and data categories: personally identifiable information, authentication information, and website content.
 - Saved the updated encryption disclosure and storage justification, and completed the three limited-use certifications. Saved the reviewer instructions below. The published item is free of charge, public, and available in all configured regions.
-- On October 16, 2026, pushed the extension commits and `v1.1.0` tag to GitHub. The privacy policy is public at https://github.com/pmxi/purdue-sso/blob/main/PRIVACY.md and that URL is saved in the Chrome listing. The policy was updated for encryption before submitting 1.1.2. Added a 1280 × 800 store screenshot graphic based on the publisher's popup capture.
+- On October 16, 2026, pushed the extension commits and `v1.1.0` tag to GitHub. The privacy policy is public at https://github.com/pmxi/purdue-sso/blob/main/PRIVACY.md and that URL is saved in the Chrome listing. The policy was updated for encryption before submitting 1.1.2. The replacement screenshot submitted for review is a 1280 × 800 PNG rendered from editable SVG matching the popup interface; no image-generation assets are used.
 - The previous Chrome 1.1.1 ZIP was built and verified: 15 files, with the manifest at the archive root. All 15 automated tests and JavaScript syntax checks pass. SHA-256: `ae081b59d91bd276483db171ac18cdddd970fcad9ca09a99c6c93a325da8d76d`.
 - Version 1.1.2 is prepared with encrypted storage, automatic plaintext migration, restricted background messages, and updated privacy disclosures. All 23 tests and syntax checks pass. Both browser packages build, and Firefox validation reports 0 errors, warnings, or notices. The Chrome ZIP contains 18 files and has SHA-256 `163bc0c18316c3ebb42b003a58e4e58581851b8a5bc7615c919ba0b0b7bffd3d`. This is the package uploaded and submitted for review. Implementation commit: `2864643`.
 - Full sign-in testing requires an authorized Purdue account. No live test credentials are included in this repository or package.
@@ -30,7 +31,7 @@ Updated October 16, 2026 for version 1.1.2, **Automatic Purdue sign-in**. This v
 
 **Small promotional tile:** `assets/chrome-promo.png` (440 × 280; editable source: `assets/chrome-promo.svg`).
 
-**Screenshot:** `assets/chrome-screenshot-enabled.png` (1280 × 800, 24-bit RGB PNG), generated from the publisher's supplied capture of the enabled popup. Generation details and prompt: `docs/chrome-screenshot.md`.
+**Screenshot:** `assets/chrome-screenshot-enabled.png` (1280 × 800, 24-bit RGB PNG), rendered from `assets/chrome-screenshot-enabled.svg`. Source and reproduction details: `docs/chrome-screenshot.md`.
 
 **Privacy policy:** https://github.com/pmxi/purdue-sso/blob/main/PRIVACY.md
 
