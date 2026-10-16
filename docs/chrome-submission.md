@@ -9,9 +9,10 @@ Prepared October 15, 2026 for version 1.1.1, **Automatic Purdue sign-in**. This 
 - Publisher registration is complete. The publisher authorized the non-trader declaration, added and verified the public contact email, and chose the display name **Paras Mittal**.
 - Saved the description, Tools category, English language, homepage/support URLs, store icon, and small promotional tile. Saved the single-purpose and permission explanations, no-remote-code declaration, and data categories: personally identifiable information, authentication information, and website content.
 - Saved the reviewer instructions below. Distribution defaults are free of charge, public, and all regions; the item itself remains unpublished.
+- On October 16, 2026, pushed the extension commits and `v1.1.0` tag to GitHub. The privacy policy is public at https://github.com/pmxi/purdue-sso/blob/main/PRIVACY.md and that URL is saved in the Chrome draft. Added a 1280 × 800 store screenshot graphic based on the publisher's popup capture.
 - The Chrome 1.1.1 ZIP is built and verified: 15 files, with the manifest at the archive root. All 15 automated tests and JavaScript syntax checks pass. SHA-256: `ae081b59d91bd276483db171ac18cdddd970fcad9ca09a99c6c93a325da8d76d`.
 - Before review: resolve storage of credentials and authenticator secrets at rest. The current implementation saves them in unencrypted `storage.local`; Google's secure-handling FAQ requires strong encryption at rest. No storage redesign has been chosen or implemented.
-- Before review: publish the accurate privacy policy at a reachable public URL, complete the final data-use certifications, and supply a screenshot or video of the actual extension. These are the remaining dashboard requirements after contact-email verification. The local privacy policy is `PRIVACY.md`; do not enter an unpublished GitHub URL in the dashboard.
+- Before review: complete the final data-use certifications after resolving the credential-storage design and updating the privacy policy to match it. After saving the screenshot and privacy URL, Google's submission checklist lists only the final data-use certification as incomplete; this form check does not establish policy compliance or resolve encryption.
 - Full sign-in testing requires an authorized Purdue account. No live test credentials are included in this repository or package.
 
 ## Listing fields
@@ -29,6 +30,10 @@ Prepared October 15, 2026 for version 1.1.1, **Automatic Purdue sign-in**. This 
 **Icon:** `extension/icons/icon-128.png`
 
 **Small promotional tile:** `assets/chrome-promo.png` (440 × 280; editable source: `assets/chrome-promo.svg`).
+
+**Screenshot:** `assets/chrome-screenshot-enabled.png` (1280 × 800, 24-bit RGB PNG), generated from the publisher's supplied capture of the enabled popup. Generation details and prompt: `docs/chrome-screenshot.md`.
+
+**Privacy policy:** https://github.com/pmxi/purdue-sso/blob/main/PRIVACY.md
 
 ## Description
 

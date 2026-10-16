@@ -98,7 +98,7 @@ The distribution ZIP contains only built extension files and the MIT license. Th
 - Distribution ZIP prepared; local Mozilla validation reports no errors or warnings.
 - Publisher account has two-step authentication enabled. The publisher authorized acceptance of Mozilla's distribution agreement and policies on October 14, 2026; they have been accepted.
 - MIT license selected by the publisher on October 14, 2026.
-- The public GitHub repository still shows an older implementation; the matching source archive is the review source for this release.
+- At submission time, the public GitHub repository showed an older implementation; the matching source archive was supplied for review. The extension commits and original `v1.1.0` tag were pushed to GitHub on October 16, 2026. Current `main` includes later changes; use the tag or uploaded source archive to reproduce this Firefox release.
 - Automated checks and these materials do not guarantee store approval. Credential-storage security and any required live-account review must be resolved before treating the extension as ready for general release.
 
 ## References
