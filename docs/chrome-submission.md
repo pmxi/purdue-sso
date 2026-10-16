@@ -4,11 +4,14 @@ Prepared October 15, 2026 for version 1.1.1, **Automatic Purdue sign-in**. This 
 
 ## Status
 
-- Publisher registration is awaiting the user's completion of Google's developer agreement and one-time registration payment.
-- This is a draft preparation, not a submission for review or an approved release.
+- Uploaded to the Chrome Web Store on October 16, 2026 as a **Draft**. This is not a submission for review or an approved release.
+- [Manage draft](https://chrome.google.com/webstore/devconsole/ff1a382b-328f-421e-b4cc-c4df094d8f2c/eddemecijgomibcpkealhgbchfiphcnc/edit/package). Item ID: `eddemecijgomibcpkealhgbchfiphcnc`.
+- Publisher registration is complete. The publisher authorized the non-trader declaration, added and verified the public contact email, and chose the display name **Paras Mittal**.
+- Saved the description, Tools category, English language, homepage/support URLs, store icon, and small promotional tile. Saved the single-purpose and permission explanations, no-remote-code declaration, and data categories: personally identifiable information, authentication information, and website content.
+- Saved the reviewer instructions below. Distribution defaults are free of charge, public, and all regions; the item itself remains unpublished.
 - The Chrome 1.1.1 ZIP is built and verified: 15 files, with the manifest at the archive root. All 15 automated tests and JavaScript syntax checks pass. SHA-256: `ae081b59d91bd276483db171ac18cdddd970fcad9ca09a99c6c93a325da8d76d`.
 - Before review: resolve storage of credentials and authenticator secrets at rest. The current implementation saves them in unencrypted `storage.local`; Google's secure-handling FAQ requires strong encryption at rest. No storage redesign has been chosen or implemented.
-- Before review: publish the accurate privacy policy at a reachable public URL, complete the data-use declarations, and supply a screenshot of the actual extension. The local privacy policy is `PRIVACY.md`; do not enter an unpublished GitHub URL in the dashboard.
+- Before review: publish the accurate privacy policy at a reachable public URL, complete the final data-use certifications, and supply a screenshot or video of the actual extension. These are the remaining dashboard requirements after contact-email verification. The local privacy policy is `PRIVACY.md`; do not enter an unpublished GitHub URL in the dashboard.
 - Full sign-in testing requires an authorized Purdue account. No live test credentials are included in this repository or package.
 
 ## Listing fields
@@ -17,7 +20,7 @@ Prepared October 15, 2026 for version 1.1.1, **Automatic Purdue sign-in**. This 
 
 **Language:** English
 
-**Suggested category:** Productivity / Tools (choose the corresponding available dashboard category).
+**Category:** Productivity / Tools
 
 **Homepage:** https://github.com/pmxi/purdue-sso
 
@@ -58,6 +61,12 @@ This is an unofficial project, not affiliated with or endorsed by Purdue Univers
 Data-use declarations must reflect the username, authentication information, and sign-in page content and URLs used to recognize and complete the flow. Local processing must be disclosed; absence of developer-operated servers does not mean the extension handles no user data. Check the dashboard's definitions when filling its categories. Do not certify full policy compliance while the storage issue is unresolved.
 
 ## Reviewer testing instructions
+
+The dashboard allows 500 characters. The following 447-character version was saved; the username/password fields were left empty because no live test account is available:
+
+> Starts disabled. Open Settings. In an isolated profile, use a dummy username/password and otpauth://totp/Test?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ to test autosave, code countdown, popup, and Clear settings. Keep automation off on live sites with dummy values. Full login requires an authorized Purdue account with TOTP; start at https://purdue.brightspace.com. No live test account is available; please request a testing arrangement if needed.
+
+Extended instructions for future supporting material:
 
 The extension starts disabled. Open its popup and choose Set up or Settings. In an isolated test profile, use a synthetic career account and password and the public test-vector URI `otpauth://totp/Test?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ` to inspect setup, auto-save, countdown, popup controls, and Clear settings. Keep automation disabled on real sign-in sites when using these synthetic values.
 
