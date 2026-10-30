@@ -181,6 +181,12 @@
       const password = find('input[type="password"]');
       const username = find('input[name="loginfmt"], input[name="j_username"], input[name="username"], #username');
       const otp = find('#idTxtBx_SAOTCC_OTC, input[name="otc"], input[autocomplete="one-time-code"]');
+      // Microsoft uses this code form for texts, calls and email as well as
+      // authenticator apps. Only an app prompt accepts the generated code.
+      const prompt = (find('#idDiv_SAOTCC_Description')?.textContent || '').trim();
+      const codeForm = !!otp && (!microsoft
+        || /\bcode displayed (?:on|in) (?:your |the )?(?:authenticator|outlook) app\b/i.test(prompt)
+        && !/\bPIN\b/.test(prompt));
       const error = Array.from(document.querySelectorAll(
         '#passwordError, #usernameError, #idDiv_SAOTCC_Error, #idDiv_SAOTCS_Error, #idDiv_SAOTCAS_Error, [role="alert"]',
       )).some(element => visible(element) && element.textContent.trim());
@@ -188,12 +194,17 @@
       // An error can belong to the previous MFA method (for example a timed-out
       // app approval). Follow offered alternatives before blocking submission.
       // Prefer the code form once it is open, and keep each navigation one-shot.
-      const useCode = control(/^use a verification code$/i);
-      if (!otp && useCode) { click('use-code', useCode); return; }
-      const usePassword = control(/^(?:use (?:your|a) password(?: instead)?|sign in with (?:your|a) password)$/i);
+      const useCode = find('[data-value="PhoneAppOTP"]') || control(/^use a verification code$/i);
+      if (!codeForm && useCode) { click('use-code', useCode); return; }
+      const usePassword = control(/^(?:use (?:your|a|my) password(?: instead)?|sign in with (?:your|a) password)$/i);
       if (!password && !otp && usePassword) { click('use-password', usePassword); return; }
-      const otherMethod = control(/^(?:I can.t use my .+ right now|sign in another way|use a different verification option)$/i);
-      if (!otp && !password && otherMethod) { click('other-method', otherMethod); return; }
+      // Prompts for other methods, such as texts and calls, link to the method list.
+      const otherMethod = find('#signInAnotherWay')
+        || control(/^(?:I can.t use my .+ right now|sign in another way|use a different verification option)$/i);
+      if (!codeForm && !password && otherMethod) { click('other-method', otherMethod); return; }
+      // A passkey sign-in replaces the password page with its own prompt.
+      const signInOptions = control(/^other ways to sign in$/i);
+      if (!otp && !password && signInOptions) { click('sign-in-options', signInOptions); return; }
 
       // Block the current form while its error is visible, but keep observing:
       // clearing the message or changing methods must not require a reload.
@@ -208,7 +219,7 @@
         if (fill(password, value)) click('password', submit);
         return;
       }
-      if (otp && /enter (?:a |the )?code|verification code/i.test(text)) {
+      if (codeForm && /enter (?:a |the )?code|verification code/i.test(text)) {
         const submit = control(/^(verify|sign in|continue)$/i);
         if (!submit || done.has('otp')) return;
         const { code, expiresAt } = await request('login.code', { revision: config.revision });

@@ -155,7 +155,10 @@ for (const apiName of ['chrome', 'browser']) {
     // remain visible on the method picker after the original challenge has failed.
     async function recoveryPage() {
       const actions = [];
-      const state = { errors: [], controls: [], password: null, otp: null, account: config.email };
+      const state = {
+        errors: [], controls: [], password: null, otp: null, prompt: null, account: config.email,
+        anotherWay: null, proofs: [],
+      };
       const storage = new Map();
       const element = (text, click = () => {}) => ({
         innerText: text, textContent: text, value: '', click,
@@ -181,6 +184,9 @@ for (const apiName of ['chrome', 'browser']) {
             if (selector.startsWith('button, a,')) return state.controls;
             if (selector === 'input[type="password"]') return state.password ? [state.password] : [];
             if (selector.startsWith('#idTxtBx_SAOTCC_OTC')) return state.otp ? [state.otp] : [];
+            if (selector === '#idDiv_SAOTCC_Description') return state.prompt ? [element(state.prompt)] : [];
+            if (selector === '#signInAnotherWay') return state.anotherWay ? [state.anotherWay] : [];
+            if (selector === '[data-value="PhoneAppOTP"]') return state.proofs;
             return [];
           },
         },
@@ -189,6 +195,9 @@ for (const apiName of ['chrome', 'browser']) {
       await reload();
       return { state, actions, element, button, input, reload, tick: () => page.testApi.tick() };
     }
+
+    // Microsoft's descriptions for the shared code form, from its sign-in strings.
+    const appPrompt = 'Enter the code displayed in the Outlook app or authenticator app on your mobile device.';
 
     for (const message of [
       "Sorry, we're having trouble verifying your account. Please try again.",
@@ -206,6 +215,7 @@ for (const apiName of ['chrome', 'browser']) {
       assert.deepEqual(p.actions, ['Use a verification code'], 'Choose a code once, including across reloads');
       p.state.errors = [];
       p.state.otp = p.input();
+      p.state.prompt = appPrompt;
       p.state.controls = [p.button('Verify'), p.button('Sign in another way')];
       await p.tick();
       await p.tick();
@@ -228,6 +238,84 @@ for (const apiName of ['chrome', 'browser']) {
       p.state.controls = [p.button('Use a verification code')];
       await p.tick();
       assert.deepEqual(p.actions, [label, 'Use a verification code']);
+    }
+
+    // A text, call or email default opens the same code form. The generated
+    // code would be rejected there, so switch to the authenticator app instead.
+    for (const prompt of [
+      'We texted your phone \u200e+X XXXXXXXX55. Please enter the code to sign in.',
+      "We're calling your phone +X XXXXXXXX55. Please enter the code to sign in.",
+      "We'll send a code to t•••@example.com to sign you in.",
+      'Please type in the code displayed on your authenticator app from your device followed by your PIN.',
+    ]) {
+      const p = await recoveryPage();
+      p.state.otp = p.input();
+      p.state.prompt = prompt;
+      p.state.controls = [p.button('Verify')];
+      await p.tick();
+      assert.equal(p.state.otp.value, '', 'Never enter an authenticator code for another method');
+      assert.deepEqual(p.actions, []);
+      p.state.anotherWay = p.button('Sign in another way');
+      // A wrong code entered before this fix leaves an error on the form.
+      p.state.errors = [p.element("You didn't enter the expected verification code. Please try again.")];
+      await p.tick();
+      await p.tick();
+      assert.deepEqual(p.actions, ['Sign in another way']);
+      Object.assign(p.state, { otp: null, prompt: null, anotherWay: null, errors: [] });
+      p.state.proofs = [p.button('Use a verification code')];
+      p.state.controls = [p.button('Text +X XXXXXXXX55'), ...p.state.proofs];
+      await p.tick();
+      assert.deepEqual(p.actions, ['Sign in another way', 'Use a verification code']);
+      Object.assign(p.state, { otp: p.input(), prompt: 'Please type in the code displayed on your authenticator app from your device', proofs: [] });
+      p.state.controls = [p.button('Verify')];
+      await p.tick();
+      assert.match(p.state.otp.value, /^\d{6}$/);
+      assert.deepEqual(p.actions, ['Sign in another way', 'Use a verification code', 'Verify']);
+    }
+
+    {
+      // Without a description, the form's method is unknown: do nothing.
+      const p = await recoveryPage();
+      p.state.otp = p.input();
+      p.state.controls = [p.button('Verify')];
+      await p.tick();
+      assert.equal(p.state.otp.value, '');
+      assert.deepEqual(p.actions, []);
+    }
+
+    {
+      // Microsoft's own verification-code tile is chosen by method, not label.
+      const p = await recoveryPage();
+      p.state.proofs = [p.button('Use a code')];
+      p.state.controls = [p.button('Approve a request on my Microsoft Authenticator app'), ...p.state.proofs];
+      await p.tick();
+      assert.deepEqual(p.actions, ['Use a code']);
+    }
+
+    {
+      // An app's own code form keeps its link to other methods; stay on it.
+      const p = await recoveryPage();
+      p.state.otp = p.input();
+      p.state.prompt = 'Enter the code displayed in the Outlook app on your mobile device.';
+      p.state.anotherWay = p.button("I can't use my Outlook mobile app right now");
+      p.state.controls = [p.button('Verify'), p.state.anotherWay];
+      await p.tick();
+      assert.match(p.state.otp.value, /^\d{6}$/);
+      assert.deepEqual(p.actions, ['Verify']);
+    }
+
+    {
+      // A passkey default replaces the password page with a security-window prompt.
+      const p = await recoveryPage();
+      p.state.controls = [p.button('Back'), p.button('Other ways to sign in')];
+      await p.tick();
+      p.state.controls = [p.button('Face, fingerprint, PIN or security key'), p.button('Use my password')];
+      await p.tick();
+      p.state.password = p.input();
+      p.state.controls = [p.button('Sign in')];
+      await p.tick();
+      assert.equal(p.state.password.value, config.password);
+      assert.deepEqual(p.actions, ['Other ways to sign in', 'Use my password', 'Sign in']);
     }
 
     {

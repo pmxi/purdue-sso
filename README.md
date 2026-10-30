@@ -55,6 +55,7 @@ The extension does not sign out, clear cookies, or change browser site data. Bri
 - Runs only on HTTPS pages at `sso.purdue.edu`, `idp.purdue.edu`, `login.microsoftonline.com`, and `purdue.brightspace.com`, in the top-level page. Campus selection is limited to Brightspace’s `/d2l/login` page.
 - On Microsoft, requires Purdue’s tenant, the configured account, or a recent continuation of that login. A different detected account prevents automation.
 - Chooses password and verification-code alternatives, generates TOTP codes locally with Web Crypto, and checks “Don’t show this again” before choosing **Yes** on “Stay signed in?”.
+- Enters generated codes only where Microsoft asks for an authenticator-app code. When the default method is a text, call, email or passkey, it switches to **Use a verification code** instead, and it never enters a code into a form for another method.
 - Preserves conflicting user-entered values, ignores hidden fields, and prevents duplicate submissions. Visible errors block form submission while recovery alternatives remain available. Rejected passwords and codes are not automatically resubmitted.
 - Waits for a fresh code when fewer than five seconds remain. Stops after three minutes on a page. The enable/disable button takes effect in open login tabs. Changing or clearing credentials stops automation in those tabs until they are reloaded.
 - Uses only the `storage` API permission for local settings. A background context handles encrypted settings and generates sign-in codes. No broad access to other sites is requested.
