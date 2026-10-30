@@ -1,9 +1,10 @@
 # Chrome Web Store submission
 
-Updated October 16, 2026 for version 1.1.2, **Automatic Purdue sign-in**. This version adds automatic AES-256-GCM encryption of saved credentials and a compatible background context for Chrome and Firefox. The Firefox release archive and `v1.1.0` tag remain unchanged.
+Updated October 30, 2026 for version 1.1.3, **Automatic Purdue sign-in**. Version 1.1.3 enters generated codes only on Microsoft's authenticator-app prompts. With a text-message, call, email or passkey default, it switches to **Use a verification code** instead of submitting the code to the wrong form. Version 1.1.2 added automatic AES-256-GCM encryption of saved credentials.
 
 ## Status
 
+- Version **1.1.3** prepared on October 30, 2026 from commit `d739512`. All 23 tests and syntax checks pass, and a live sign-in from Brightspace succeeded with the built Chrome package. No listing, permission, or data-use changes.
 - Version **1.1.2** was submitted, approved, and manually published on October 16, 2026. The dashboard confirms **Published — public**, and the [public Chrome Web Store listing](https://chromewebstore.google.com/detail/automatic-purdue-sign-in/eddemecijgomibcpkealhgbchfiphcnc) displays version 1.1.2. Automatic publication was disabled during review; after approval, the publisher explicitly authorized publication. The staged publication deadline no longer applies.
 - Later on October 16, 2026, submitted a listing-only screenshot replacement for review. The replacement PNG is rendered from editable SVG and uses no image-generation assets. The old screenshot was removed from the draft, leaving only the replacement. Google confirmed submission, and the update is **Pending review** with automatic publication enabled. No new extension package was uploaded; the published release remains version 1.1.2. The screenshot replacement is not confirmed live until this listing update is approved and published.
 - [Manage submission](https://chrome.google.com/webstore/devconsole/ff1a382b-328f-421e-b4cc-c4df094d8f2c/eddemecijgomibcpkealhgbchfiphcnc/edit/package). Item ID: `eddemecijgomibcpkealhgbchfiphcnc`.
@@ -89,7 +90,7 @@ npm test
 npm run check
 npm run build:chrome
 mkdir -p dist/packages
-(cd dist/chrome && zip -X -r ../packages/purdue-sso-chrome-1.1.2.zip .)
+(cd dist/chrome && zip -X -r ../packages/purdue-sso-chrome-1.1.3.zip .)
 ```
 
 The ZIP must have `manifest.json` at its root. Upload only the built extension, icons, and MIT license, excluding source tests, screenshots, local credentials, and development tools. The build script uses an explicit file allowlist.
