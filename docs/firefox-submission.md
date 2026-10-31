@@ -1,6 +1,6 @@
 # Firefox Add-ons submission
 
-Submission record and materials for Firefox Add-ons. Version 1.1.0 was submitted on October 14, 2026 and approved on October 17, 2026. Version 1.1.3, submitted October 30, 2026, adds the encrypted storage first released for Chrome in 1.1.2 and fixes verification-code entry when the account's default method is a text message, call, email or passkey.
+Submission record and materials for Firefox Add-ons. Version 1.1.0 was submitted on October 14, 2026 and approved on October 17, 2026. Version 1.1.3, submitted and approved October 30, 2026, adds the encrypted storage first released for Chrome in 1.1.2 and fixes verification-code entry when the account's default method is a text message, call, email or passkey.
 
 ## Listing fields
 
@@ -92,7 +92,7 @@ The distribution ZIP contains only built extension files and the MIT license. Th
 
 ## Submission status
 
-- Version 1.1.3 submitted on October 30, 2026 (about 2:05 PM EDT) from tag `v1.1.3`, with release notes, reviewer notes and the matching source archive. Mozilla validated it with no errors or warnings, and the version list shows **Awaiting Review**; 1.1.0 remains the public version until approval. Distribution ZIP SHA-256 `b075592368806689b2d0f756317168690ac0b5b53419fe2ef4a6a4d432932d9a`; source ZIP `3b11b4a17cc6e6b702086ea3e021aec4ca45bfbd8ef0e41d437f4059212e3289`. Rebuilding from the source archive reproduced `dist/firefox` exactly.
+- Version 1.1.3 submitted on October 30, 2026 (about 1:52 PM EDT) from tag `v1.1.3`, with release notes, reviewer notes and the matching source archive. Mozilla validated it with no errors or warnings. Mozilla emailed at 1:56 PM EDT that it passed automated screening and is tentatively approved; the public API reported 1.1.3 as the current public version at 10:48 PM EDT. A later human review may still request changes. Distribution ZIP SHA-256 `b075592368806689b2d0f756317168690ac0b5b53419fe2ef4a6a4d432932d9a`; source ZIP `3b11b4a17cc6e6b702086ea3e021aec4ca45bfbd8ef0e41d437f4059212e3289`. Rebuilding from the source archive reproduced `dist/firefox` exactly.
 - Same day: replaced the listing's credential-storage paragraph with the encryption wording above, and replaced the listing privacy policy with the current `PRIVACY.md` (last updated October 16, 2026). The public privacy page was checked afterward.
 - On October 15, 2026, the listing name, description, and privacy policy were updated to **Automatic Purdue sign-in**. Version 1.1.0 remains awaiting review with its original uploaded package.
 - Version 1.1.0 submitted on October 14, 2026. Mozilla displayed **Version Submitted** and will email the publisher when it is published. The completion page says publication may take up to 24 hours, or longer for manual review.
