@@ -1,9 +1,10 @@
 # Chrome Web Store submission
 
-Updated October 30, 2026 for version 1.1.3, **Automatic Purdue sign-in**. Version 1.1.3 enters generated codes only on Microsoft's authenticator-app prompts. With a text-message, call, email or passkey default, it switches to **Use a verification code** instead of submitting the code to the wrong form. Version 1.1.2 added automatic AES-256-GCM encryption of saved credentials.
+Updated October 30, 2026 for version 1.1.4, **Automatic Purdue sign-in**. Version 1.1.4 adds a status box to the top of Settings (**Incomplete** with what is missing, **Ready**, **Disabled** or **Not saved**) and turns automatic sign-in on by default once setup is complete. Version 1.1.3 enters generated codes only on Microsoft's authenticator-app prompts. With a text-message, call, email or passkey default, it switches to **Use a verification code** instead of submitting the code to the wrong form. Version 1.1.2 added automatic AES-256-GCM encryption of saved credentials.
 
 ## Status
 
+- Version **1.1.4** prepared on October 30, 2026 from tag `v1.1.4`. The description and reviewer instructions below were updated for the enabled-by-default behavior.
 - Version **1.1.3** uploaded and submitted for review on October 30, 2026 (about 1:46 PM EDT), with **automatic publication after review enabled**. It was approved and published automatically the same day: the public listing displayed version 1.1.3 at 10:48 PM EDT (exact publication time unknown). At submission the dashboard showed **Pending review**, draft 1.1.3 and published 1.1.2 ([screenshot](../output/chrome-1.1.3-submitted.png), not committed). Built from commit `d739512`; the ZIP has 18 files plus the `icons/` directory entry, SHA-256 `f123ed89d102a5a7c3216755f64298e55c6e9719b9ad28fc586dbb66b90b2e5f`. All 23 tests and syntax checks pass, and a live sign-in from Brightspace succeeded with the built package. No listing, permission, or data-use changes.
 - Version **1.1.2** was submitted, approved, and manually published on October 16, 2026. The dashboard confirms **Published — public**, and the [public Chrome Web Store listing](https://chromewebstore.google.com/detail/automatic-purdue-sign-in/eddemecijgomibcpkealhgbchfiphcnc) displays version 1.1.2. Automatic publication was disabled during review; after approval, the publisher explicitly authorized publication. The staged publication deadline no longer applies.
 - Later on October 16, 2026, submitted a listing-only screenshot replacement for review. The replacement PNG is rendered from editable SVG and uses no image-generation assets. The old screenshot was removed from the draft, leaving only the replacement. Google confirmed submission, and the update is **Pending review** with automatic publication enabled. No new extension package was uploaded; the published release remains version 1.1.2. The screenshot replacement is not confirmed live until this listing update is approved and published.
@@ -40,15 +41,15 @@ Updated October 30, 2026 for version 1.1.3, **Automatic Purdue sign-in**. Versio
 
 Reduce repeated typing when signing in to Purdue services such as Brightspace.
 
-After you configure and enable it, Automatic Purdue sign-in selects your campus and account, fills your username and password, and generates and submits time-based authenticator codes locally. It can also choose Yes and Don't show this again on Microsoft's Stay signed in prompt.
+Once you set it up, Automatic Purdue sign-in selects your campus and account, fills your username and password, and generates and submits time-based authenticator codes locally. It can also choose Yes and Don't show this again on Microsoft's Stay signed in prompt.
 
 • One button enables or disables automatic sign-in: green when enabled, gray when disabled.
-• Settings save automatically, and the setup verification code refreshes with a countdown.
+• Settings save automatically, and a status box shows whether setup is incomplete or ready.
 • Runs on the declared Purdue, Brightspace, and Microsoft sign-in sites.
 • Stops on conflicting accounts and visible sign-in errors, and limits repeated submissions.
 • No developer server, analytics, advertising, or telemetry.
 
-Setup requires a Purdue account and an authenticator setup key or compatible otpauth enrollment URI. A current six-digit verification code is not a setup key. Follow the instructions in Settings to add and verify an authenticator method. Automatic sign-in starts disabled.
+Setup requires a Purdue account and an authenticator setup key or compatible otpauth enrollment URI. A current six-digit verification code is not a setup key. Follow the instructions in Settings to add and verify an authenticator method. Automatic sign-in turns on once setup is complete; you can turn it off from the popup at any time.
 
 Credentials and the authenticator secret are encrypted with AES-256-GCM in your local browser profile. A non-exportable encryption key is stored in the same profile, so no extra unlock step is needed. This is not an operating-system or hardware-backed vault; someone with access to the profile or a compromised device may still recover or use the key and credentials. When enabled, the extension submits your username, password, and generated codes to Purdue/Microsoft's normal HTTPS sign-in forms. The setup key stays in the browser. You can disable automation or clear saved settings at any time.
 
@@ -68,13 +69,13 @@ Data-use declarations must reflect the username, authentication information, and
 
 ## Reviewer testing instructions
 
-The dashboard allows 500 characters. The following 447-character version was saved; the username/password fields were left empty because no live test account is available:
+The dashboard allows 500 characters. The following version was saved for 1.1.4; the username/password fields were left empty because no live test account is available:
 
-> Starts disabled. Open Settings. In an isolated profile, use a dummy username/password and otpauth://totp/Test?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ to test autosave, code countdown, popup, and Clear settings. Keep automation off on live sites with dummy values. Full login requires an authorized Purdue account with TOTP; start at https://purdue.brightspace.com. No live test account is available; please request a testing arrangement if needed.
+> Open Settings. In an isolated profile, use a dummy username/password and otpauth://totp/Test?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ to test autosave, the status box, code countdown, popup, and Clear settings. Sign-in turns on once set up; turn it off in the popup before visiting live sites with dummy values. Full login requires an authorized Purdue account with TOTP; start at https://purdue.brightspace.com. No live test account is available; please request a testing arrangement if needed.
 
 Extended instructions for future supporting material:
 
-The extension starts disabled. Open its popup and choose Set up or Settings. In an isolated test profile, use a synthetic career account and password and the public test-vector URI `otpauth://totp/Test?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ` to inspect setup, auto-save, countdown, popup controls, and Clear settings. Keep automation disabled on real sign-in sites when using these synthetic values.
+Automatic sign-in turns on once setup is complete. Open its popup and choose Set up or Settings. In an isolated test profile, use a synthetic career account and password and the public test-vector URI `otpauth://totp/Test?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ` to inspect setup, auto-save, the status box, countdown, popup controls, and Clear settings. Turn automation off in the popup before visiting real sign-in sites with these synthetic values.
 
 For full sign-in testing, use a Purdue account authorized for a compatible TOTP method and start at https://purdue.brightspace.com. No live university test account is included. Request an appropriate testing arrangement if account access is necessary for review.
 
@@ -90,7 +91,7 @@ npm test
 npm run check
 npm run build:chrome
 mkdir -p dist/packages
-(cd dist/chrome && zip -X -r ../packages/purdue-sso-chrome-1.1.3.zip .)
+(cd dist/chrome && zip -X -r ../packages/purdue-sso-chrome-1.1.4.zip .)
 ```
 
 The ZIP must have `manifest.json` at its root. Upload only the built extension, icons, and MIT license, excluding source tests, screenshots, local credentials, and development tools. The build script uses an explicit file allowlist.

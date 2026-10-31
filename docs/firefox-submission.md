@@ -1,6 +1,6 @@
 # Firefox Add-ons submission
 
-Submission record and materials for Firefox Add-ons. Version 1.1.0 was submitted on October 14, 2026 and approved on October 17, 2026. Version 1.1.3, submitted and approved October 30, 2026, adds the encrypted storage first released for Chrome in 1.1.2 and fixes verification-code entry when the account's default method is a text message, call, email or passkey.
+Submission record and materials for Firefox Add-ons. Version 1.1.0 was submitted on October 14, 2026 and approved on October 17, 2026. Version 1.1.3, submitted and approved October 30, 2026, adds the encrypted storage first released for Chrome in 1.1.2 and fixes verification-code entry when the account's default method is a text message, call, email or passkey. Version 1.1.4 adds a status box to the top of Settings (**Incomplete** with what is missing, **Ready**, **Disabled** or **Not saved**) and turns automatic sign-in on by default once setup is complete.
 
 ## Listing fields
 
@@ -28,15 +28,15 @@ The current display name is **Automatic Purdue sign-in**. Version 1.1.0 was subm
 
 Reduce repeated typing when signing in to Purdue services such as Brightspace.
 
-After you configure and enable it, Automatic Purdue sign-in selects your campus and account, fills your username and password, and generates and submits time-based authenticator codes locally. It can also choose Yes and Don't show this again on Microsoft's Stay signed in prompt.
+Once you set it up, Automatic Purdue sign-in selects your campus and account, fills your username and password, and generates and submits time-based authenticator codes locally. It can also choose Yes and Don't show this again on Microsoft's Stay signed in prompt.
 
 - One button enables or disables automatic sign-in: green when enabled, gray when disabled.
-- Settings save automatically, and the setup verification code refreshes with a countdown.
+- Settings save automatically, and a status box shows whether setup is incomplete or ready.
 - Runs only on the declared Purdue, Brightspace, and Microsoft sign-in sites.
 - Stops on conflicting accounts and visible sign-in errors, and limits repeated submissions.
 - No developer server, analytics, advertising, or telemetry.
 
-Setup requires a Purdue account and an authenticator setup key or compatible otpauth enrollment URI. A current six-digit verification code is not a setup key. Follow the instructions in Settings to add and verify an authenticator method. Automatic sign-in starts disabled.
+Setup requires a Purdue account and an authenticator setup key or compatible otpauth enrollment URI. A current six-digit verification code is not a setup key. Follow the instructions in Settings to add and verify an authenticator method. Automatic sign-in turns on once setup is complete; you can turn it off from the popup at any time.
 
 Credentials and the authenticator secret are encrypted with AES-256-GCM in your local browser profile. A non-exportable encryption key is stored in the same profile, so no extra unlock step is needed. This is not an operating-system or hardware-backed vault; someone with access to the profile or a compromised device may still recover or use the key and credentials. When enabled, the extension submits your username, password, and generated codes to Purdue/Microsoft's normal HTTPS sign-in forms. The setup key stays in the browser. You can disable automation or clear saved settings at any time.
 
@@ -52,13 +52,13 @@ Permission use:
 
 - `storage`: saves the user's settings locally as AES-256-GCM ciphertext, with a non-exportable key in extension IndexedDB. Browser sync is not used.
 - Content-script matches: `https://sso.purdue.edu/*`, `https://idp.purdue.edu/*`, `https://login.microsoftonline.com/*`, and `https://purdue.brightspace.com/*`. Scripts run only in the top-level page. The Brightspace action is limited to `/d2l/login`; Microsoft automation checks Purdue's tenant, the configured account, or a recent continuation of that login.
-- Required data transmission category `authenticationInfo`: the extension submits the user-provided account details and locally generated verification codes through the receiving websites' HTTPS login forms. The enrollment secret is not transmitted. Firefox's built-in data consent is used, and automation is separately disabled by default until the user enables it.
+- Required data transmission category `authenticationInfo`: the extension submits the user-provided account details and locally generated verification codes through the receiving websites' HTTPS login forms. The enrollment secret is not transmitted. Firefox's built-in data consent is used. Automation runs only after the user saves an account, password and authenticator key, and can be turned off from the popup.
 
 Testing without a Purdue account:
 
 1. Install the extension and open its popup. With no saved credentials, the button reads Set up. Click it or Settings to open the options page.
 2. In an isolated test profile, enter a synthetic career account and password and the public test-vector URI `otpauth://totp/Test?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ`. Do not use these test values to submit a live sign-in form.
-3. Check that valid settings save automatically, the displayed verification code refreshes with a countdown, and the popup reflects enable/disable changes. Keep automation disabled when visiting real login services with synthetic settings.
+3. Check that valid settings save automatically, the status box at the top of Settings changes from Incomplete to Ready, the displayed verification code refreshes with a countdown, and the popup reflects enable/disable changes. Turn automation off in the popup before visiting real login services with synthetic settings.
 4. Clear settings and verify that the setup state returns and the verification code disappears.
 5. Run `npm test` in the source archive to exercise the sign-in flows, account and form safeguards, code generation, popup, options, and browser-specific builds with synthetic data. These tests simulate the website DOM; they do not establish a real Purdue session.
 
@@ -68,7 +68,7 @@ Build: Node.js 20+, no runtime or build dependencies. From the source archive ro
 
 ## Reproducing the Firefox build
 
-Version 1.1.3 was prepared on macOS using Node.js 24.22.1. The build also supports Node.js 20 or newer on Linux and Windows and uses only Node's built-in modules. Tests use one development dependency, `fake-indexeddb`, installed by `npm ci`. PNG icons are included; regenerating icons is not part of the normal build.
+Version 1.1.4 was prepared on macOS using Node.js 24.22.1. The build also supports Node.js 20 or newer on Linux and Windows and uses only Node's built-in modules. Tests use one development dependency, `fake-indexeddb`, installed by `npm ci`. PNG icons are included; regenerating icons is not part of the normal build.
 
 From the root of the source archive:
 
@@ -84,7 +84,7 @@ Compare the generated `dist/firefox` files with the contents of the uploaded ext
 The publisher can package and validate the build with Mozilla's optional tool:
 
 ```sh
-npm exec --yes --package=web-ext -- web-ext build --source-dir dist/firefox --artifacts-dir dist/packages --filename purdue-sso-firefox-1.1.3.zip --overwrite-dest
+npm exec --yes --package=web-ext -- web-ext build --source-dir dist/firefox --artifacts-dir dist/packages --filename purdue-sso-firefox-1.1.4.zip --overwrite-dest
 npm exec --yes --package=web-ext -- web-ext lint --source-dir dist/firefox --warnings-as-errors
 ```
 
@@ -92,6 +92,7 @@ The distribution ZIP contains only built extension files and the MIT license. Th
 
 ## Submission status
 
+- Version 1.1.4 prepared on October 30, 2026 from tag `v1.1.4`. The description and reviewer notes above were updated for the enabled-by-default behavior.
 - Version 1.1.3 submitted on October 30, 2026 (about 1:52 PM EDT) from tag `v1.1.3`, with release notes, reviewer notes and the matching source archive. Mozilla validated it with no errors or warnings. Mozilla emailed at 1:56 PM EDT that it passed automated screening and is tentatively approved; the public API reported 1.1.3 as the current public version at 10:48 PM EDT. A later human review may still request changes. Distribution ZIP SHA-256 `b075592368806689b2d0f756317168690ac0b5b53419fe2ef4a6a4d432932d9a`; source ZIP `3b11b4a17cc6e6b702086ea3e021aec4ca45bfbd8ef0e41d437f4059212e3289`. Rebuilding from the source archive reproduced `dist/firefox` exactly.
 - Same day: replaced the listing's credential-storage paragraph with the encryption wording above, and replaced the listing privacy policy with the current `PRIVACY.md` (last updated October 16, 2026). The public privacy page was checked afterward.
 - On October 15, 2026, the listing name, description, and privacy policy were updated to **Automatic Purdue sign-in**. Version 1.1.0 remains awaiting review with its original uploaded package.
