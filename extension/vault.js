@@ -34,8 +34,10 @@ export function createVault(storage, indexedDB = globalThis.indexedDB, crypto = 
   }
 
   async function read() {
-    const { vault, enabled } = await storage.get(['vault', 'enabled']);
-    if (!vault) return { enabled: enabled === true, revision: null };
+    const { vault, enabled: stored } = await storage.get(['vault', 'enabled']);
+    // Automatic sign-in is on unless the user has turned it off.
+    const enabled = stored !== false;
+    if (!vault) return { enabled, revision: null };
     if (vault.version !== 1 || !Array.isArray(vault.iv) || vault.iv.length !== 12 || !Array.isArray(vault.data)) {
       throw new Error('Invalid credential storage');
     }
@@ -43,7 +45,7 @@ export function createVault(storage, indexedDB = globalThis.indexedDB, crypto = 
     const bytes = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: new Uint8Array(vault.iv),
       additionalData: aad, tagLength: 128 }, key, new Uint8Array(vault.data));
     const settings = JSON.parse(new TextDecoder().decode(bytes));
-    return { ...settings, enabled: enabled === true, revision: vault.iv.join('.') };
+    return { ...settings, enabled, revision: vault.iv.join('.') };
   }
 
   async function write(settings) {

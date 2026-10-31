@@ -117,6 +117,18 @@ test('Modified ciphertext, IV, version, and missing keys fail closed and remain 
   assert.deepEqual(f.data, {}, 'Clear also recovers from a failed migration');
 });
 
+test('Automatic sign-in defaults to on, including for migrated settings, until turned off', async () => {
+  const f = fixture();
+  for (const [field, value] of Object.entries(credentials)) await f.send('settings.write', { field, value });
+  assert.deepEqual(await f.send('status', {}, f.popup), { ready: true, enabled: true });
+  assert.equal((await f.send('login.config', {}, f.content)).enabled, true);
+  await f.send('toggle', {}, f.popup);
+  assert.equal(f.data.enabled, false);
+  assert.deepEqual(await f.restart().handle({ type: 'status' }, f.popup), { ready: true, enabled: false });
+  const migrated = fixture({ ...credentials });
+  assert.deepEqual(await migrated.send('status', {}, migrated.popup), { ready: true, enabled: true });
+});
+
 test('Broker limits credentials by sender, operation, enabled state, and settings revision', async () => {
   const f = fixture(); await setup(f);
   const status = await f.send('status', {}, f.popup);

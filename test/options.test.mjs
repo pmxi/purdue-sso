@@ -15,15 +15,16 @@ async function openSettings(apiName, initial = {}, generate = generateTotp) {
   const listeners = {};
   const timers = new Map();
   const writes = [];
-  const nodes = Object.fromEntries([...fields, 'status', 'current-code', 'code-timer', 'code-countdown', 'code-progress']
-    .map(id => [id, { id, value: '', checked: false, textContent: '', hidden: false }]));
+  const nodes = Object.fromEntries([...fields, 'status', 'status-title', 'status-detail', 'current-code', 'code-timer',
+    'code-countdown', 'code-progress'].map(id => [id, { id, value: '', checked: false, textContent: '', hidden: false, dataset: {} }]));
   nodes['current-code'].textContent = '—';
   nodes['code-timer'].hidden = true;
   const form = {
     inert: false,
     addEventListener(type, handler) { listeners[type] = handler; },
+    // Mirrors the HTML defaults, including the checked enable box.
     reset() {
-      for (const field of fields) { nodes[field].value = ''; nodes[field].checked = false; }
+      for (const field of fields) { nodes[field].value = ''; nodes[field].checked = field === 'enabled'; }
       nodes.campus.value = 'Purdue West Lafayette / Indianapolis';
     },
   };
@@ -80,6 +81,9 @@ async function openSettings(apiName, initial = {}, generate = generateTotp) {
   await flush();
   return {
     store, writes, nodes, form,
+    get status() {
+      return `${nodes.status.dataset.state} | ${nodes['status-title'].textContent} | ${nodes['status-detail'].textContent}`;
+    },
     set beforeSave(callback) { beforeSave = callback; },
     async edit(field, value, type = 'input') {
       if (field === 'enabled') nodes[field].checked = value;
@@ -114,13 +118,15 @@ async function openSettings(apiName, initial = {}, generate = generateTotp) {
 for (const apiName of ['chrome', 'browser']) {
   test(`Settings autosave fields and reject invalid edits (${apiName} API)`, async () => {
     const page = await openSettings(apiName);
+    assert.equal(page.status, 'incomplete | Incomplete | Still needed: career account, password, and authenticator key.');
     await page.edit('username', 'tes');
+    assert.equal(page.status, 'incomplete | Incomplete | Saving…');
     await page.advance(399);
     assert.equal(page.writes.length, 0, 'Wait for a typing pause');
     await page.edit('username', ' test@purdue.edu ');
     await page.advance(400);
     assert.deepEqual(page.writes, [{ username: 'test' }]);
-    assert.equal(page.nodes.status.textContent, 'Saved automatically.');
+    assert.equal(page.status, 'incomplete | Incomplete | Still needed: password and authenticator key.');
 
     await page.edit('password', ' keep spaces ');
     await page.edit('password', ' keep spaces ', 'change');
@@ -128,27 +134,28 @@ for (const apiName of ['chrome', 'browser']) {
     await page.edit('totp_uri', '123456');
     await page.advance(400);
     assert.equal(page.store.totp_uri, undefined, 'A six-digit code is not a setup key');
-    assert.match(page.nodes.status.textContent, /incomplete or invalid/);
+    assert.match(page.status, /^error \| Not saved \| .*incomplete or invalid/);
     await page.edit('enabled', true, 'change');
     assert.equal(page.store.enabled, true);
-    assert.match(page.nodes.status.textContent, /incomplete or invalid/, 'An unrelated save must not hide an invalid field');
+    assert.match(page.status, /incomplete or invalid/, 'An unrelated save must not hide an invalid field');
 
     await page.edit('totp_uri', 'GEZD GNBV GY3T QOJQ GEZD GNBV GY3T QOJQ');
     await page.advance(400);
     assert.equal(page.store.totp_uri, 'otpauth://totp/Purdue%3Atest%40purdue.edu?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ&issuer=Purdue');
     assert.match(page.nodes['current-code'].textContent, /^\d{6}$/);
-    assert.equal(page.nodes.status.textContent, 'Saved automatically.');
+    assert.equal(page.status, 'ready | Ready | Saved. Automatic sign-in is on.');
     await page.edit('campus', 'Purdue Fort Wayne', 'change');
     assert.equal(page.store.campus, 'Purdue Fort Wayne');
 
     await page.externalEnabled(false);
     assert.equal(page.nodes.enabled.checked, false);
+    assert.equal(page.status, 'disabled | Disabled | Saved. Automatic sign-in is off.');
     await page.edit('password', 'new password', 'change');
     assert.deepEqual(page.writes.at(-1), { password: 'new password' }, 'Only save the edited field');
     assert.equal(page.store.enabled, false, 'Editing credentials must not undo the popup toggle');
     await page.edit('username', '', 'change');
     assert.equal(page.store.username, 'test');
-    assert.match(page.nodes.status.textContent, /Enter your career account/);
+    assert.equal(page.status, 'error | Not saved | Enter your career account to save it.');
 
     await page.edit('password', 'pending edit');
     await page.clear();
@@ -156,9 +163,27 @@ for (const apiName of ['chrome', 'browser']) {
     assert.deepEqual(page.store, {});
     assert.equal(page.nodes['current-code'].textContent, '—');
     assert.equal(page.nodes['code-timer'].hidden, true);
-    assert.match(page.nodes.status.textContent, /Settings cleared/);
+    assert.equal(page.nodes.enabled.checked, true, 'Clearing restores the enabled default');
+    assert.equal(page.status, 'incomplete | Incomplete | Settings cleared. Reload any open Purdue sign-in page.');
+    await page.edit('username', 'next');
+    assert.equal(page.status, 'incomplete | Incomplete | Saving…', 'Editing replaces the cleared notice');
   });
 }
+
+test('Automatic sign-in is on by default and stays off once turned off', async () => {
+  const page = await openSettings('chrome');
+  assert.equal(page.nodes.enabled.checked, true);
+  await page.edit('username', 'test', 'change');
+  await page.edit('password', 'dummy', 'change');
+  assert.equal(page.status, 'incomplete | Incomplete | Still needed: authenticator key.');
+  await page.edit('totp_uri', uri, 'change');
+  assert.equal(page.status, 'ready | Ready | Saved. Automatic sign-in is on.');
+  assert.equal(page.store.enabled, undefined, 'Finishing setup needs no separate enable step');
+
+  const off = await openSettings('browser', { username: 'test', password: 'dummy', totp_uri: uri, enabled: false });
+  assert.equal(off.nodes.enabled.checked, false);
+  assert.equal(off.status, 'disabled | Disabled | Saved. Automatic sign-in is off.');
+});
 
 test('Verification code and countdown refresh at the configured period, including after a hidden tab', async () => {
   for (const period of [30, 60]) {
@@ -226,9 +251,9 @@ test('A failed autosave reports failure and a subsequent edit can retry', async 
   page.beforeSave = async () => { throw new Error('Synthetic storage failure'); };
   await page.edit('password', 'edited', 'change');
   assert.equal(page.store.password, 'original');
-  assert.match(page.nodes.status.textContent, /Could not save/);
+  assert.match(page.status, /^error \| Not saved \| Could not save/);
   page.beforeSave = async () => {};
   await page.edit('password', 'edited again', 'change');
   assert.equal(page.store.password, 'edited again');
-  assert.equal(page.nodes.status.textContent, 'Saved automatically.');
+  assert.equal(page.status, 'incomplete | Incomplete | Still needed: career account and authenticator key.');
 });

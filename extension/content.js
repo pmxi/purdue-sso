@@ -35,7 +35,7 @@
       return;
     }
     if (changes.enabled && changes.enabled.oldValue !== changes.enabled.newValue) {
-      enabled = changes.enabled.newValue === true;
+      enabled = changes.enabled.newValue !== false;
       scheduleTicks();
     }
   });

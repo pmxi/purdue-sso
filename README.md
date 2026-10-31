@@ -1,6 +1,6 @@
 # Automatic Purdue sign-in
 
-A browser extension for Chrome and Firefox that automates Purdue sign-in: campus and account selection, username, password, authenticator codes, and the “Stay signed in?” prompt. Automatic sign-in is off until you configure and enable it.
+A browser extension for Chrome and Firefox that automates Purdue sign-in: campus and account selection, username, password, authenticator codes, and the “Stay signed in?” prompt. Automatic sign-in starts once you finish setup, and you can turn it off at any time.
 
 Install from the [Chrome Web Store](https://chromewebstore.google.com/detail/automatic-purdue-sign-in/eddemecijgomibcpkealhgbchfiphcnc) or [Firefox Add-ons](https://addons.mozilla.org/firefox/addon/purdue-automatic-sign-in/). After installation, open the extension popup and click **Set up**.
 
@@ -37,7 +37,7 @@ For private windows, allow the extension in **Add-ons and themes → Automatic P
 ## Configure
 
 1. Enter your Purdue career account, password, and an authenticator setup key or existing `otpauth://totp/…` enrollment URI in **Settings**.
-2. Choose your campus and enable automatic sign-in. Valid changes save automatically; check the save status before closing Settings.
+2. Choose your campus. Valid changes save automatically. The status box at the top of Settings says **Incomplete** and lists what is missing until the account, password, and key are saved, then **Ready**. Automatic sign-in is on by default; **Disabled** means you turned it off.
 3. Start at a Purdue service such as [Brightspace](https://purdue.brightspace.com). The bare `https://sso.purdue.edu/` address is not a login entry point.
 
 To obtain a new setup key for an account that already has MFA, sign in at [Microsoft Security info](https://mysignins.microsoft.com/security-info) using your existing method. Choose **+ Add sign-in method → Microsoft Authenticator → Set up a different authenticator app → Can’t scan QR Code?** Copy the secret key into Settings and wait for the saved status. Use the displayed current code to verify the new method in Microsoft Security info. The code refreshes automatically, with a countdown until the next code. Keep your existing method until the new one works. Purdue describes this process in its [authentication code setup guide](https://service.purdue.edu/TDClient/32/Purdue/KB/Article/2219/How-To-Set-Up-Authentication-Codes-with-Yubikeys-for-Microsoft-MFA).

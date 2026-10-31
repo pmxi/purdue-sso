@@ -17,9 +17,17 @@
   #code-timer { display: inline-flex; align-items: center; gap: .4rem; color: #555; font-size: .85rem; font-variant-numeric: tabular-nums; }
   #code-progress { width: 3rem; height: .4rem; accent-color: #15803d; }
   [hidden] { display: none !important; }
-  #status { min-height: 1.5em; }
+  #status { position: sticky; top: 0; z-index: 1; display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem .75rem; padding: .75rem 1rem; border: 1px solid #a1a1aa; border-radius: .5rem; background: #f4f4f5; color: #3f3f46; }
+  #status-title { font-size: 1.25rem; }
+  #status[data-state="incomplete"] { border-color: #d97706; background: #fef3c7; color: #78350f; }
+  #status[data-state="ready"] { border-color: #15803d; background: #dcfce7; color: #14532d; }
+  #status[data-state="error"] { border-color: #dc2626; background: #fee2e2; color: #7f1d1d; }
 </style>
 <h1>Automatic Purdue sign-in</h1>
+<div id="status" role="status" aria-live="polite">
+  <strong id="status-title">Loading…</strong>
+  <span id="status-detail"></span>
+</div>
 <p>Settings are encrypted and stay in this browser profile.</p>
 <h2>Set up automatic sign-in</h2>
 <ol>
@@ -56,9 +64,8 @@
     </select>
   </label>
   <p>When enabled, the extension enters and submits your saved username, password, and generated codes to Purdue/Microsoft sign-in forms. The authenticator setup key stays in this browser profile.</p>
-  <label><input id="enabled" name="enabled" type="checkbox">Enable automatic sign-in</label>
-  <p id="status" role="status" aria-live="polite">Changes save automatically.</p>
-  </form>
+  <label><input id="enabled" name="enabled" type="checkbox" checked>Enable automatic sign-in</label>
+</form>
 <div class="actions"><button id="clear" type="button">Clear settings</button></div>
 <script src="client.js"></script>
 <script src="totp.js"></script>

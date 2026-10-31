@@ -1,6 +1,6 @@
 # Privacy policy for Automatic Purdue sign-in
 
-Last updated: October 16, 2026
+Last updated: October 30, 2026
 
 Automatic Purdue sign-in is an unofficial browser extension. It is not affiliated with Purdue University or Microsoft.
 
@@ -16,7 +16,7 @@ The extension also uses temporary timestamps in the sign-in websites' session st
 
 ## How information is used and transmitted
 
-Automatic sign-in is off until you enable it. When enabled, the extension reads the supported sign-in pages to identify login forms, the selected account, available authentication methods, and errors. It enters and submits your saved username, password, and locally generated verification codes through the normal HTTPS sign-in forms operated by Purdue and Microsoft. It also selects your configured campus and account and can choose Yes and Don't show this again on the Stay signed in prompt.
+Automatic sign-in is on by default once you save your settings, and you can turn it off from the popup or Settings. When enabled, the extension reads the supported sign-in pages to identify login forms, the selected account, available authentication methods, and errors. It enters and submits your saved username, password, and locally generated verification codes through the normal HTTPS sign-in forms operated by Purdue and Microsoft. It also selects your configured campus and account and can choose Yes and Don't show this again on the Stay signed in prompt.
 
 The extension runs on `sso.purdue.edu`, `idp.purdue.edu`, `login.microsoftonline.com`, and `purdue.brightspace.com`. Campus selection follows the sign-in links provided by Brightspace; the Purdue Global option can navigate to `campus.purdueglobal.edu`.
 
